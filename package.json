@@ -1,0 +1,12 @@
+{
+	"name": "py-pratyaksa",
+	"private": true,
+	"description": "Pratyaksa — Mining Intelligence Platform (FastAPI + Svelte)",
+	"scripts": {
+		"dev:backend": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8080",
+		"dev:frontend": "cd frontend && pnpm dev",
+		"test:backend": "cd backend && python -m pytest -q",
+		"build:frontend": "cd frontend && pnpm build",
+		"up": "docker compose --profile full up -d --build"
+	}
+}
