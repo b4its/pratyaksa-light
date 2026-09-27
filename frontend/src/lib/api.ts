@@ -91,7 +91,7 @@ export const api = {
 		return fetch(`${baseURL}/svc/upload-model`, { method: 'POST', body: fd }).then((r) => r.json());
 	},
 	sendAlert: (payload: Record<string, string>) =>
-		request('/svc/send-alert', { method: 'POST', body: payload, auth: true }),
+		request('/svc/send-alert', { method: 'POST', body: payload }),
 
 	// Analisa kerusakan (health analytics)
 	getAnalisaOverview: () => request('/analisa/overview', { auth: true }),
