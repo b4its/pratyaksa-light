@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Request
 
@@ -247,7 +246,3 @@ def _live_stats(fleet: list[dict]) -> dict:
             "map_locations": map_locations,
         },
     }
-
-
-_ = timezone
-_ = datetime

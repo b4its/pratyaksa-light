@@ -7,7 +7,6 @@ from typing import Any, Awaitable, Callable
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 
-from app.core.config import AppConfig, get_config
 from app.core.errors import BadRequestError
 from app.pratyaksa import simulator
 from app.pratyaksa.state import (
@@ -274,6 +273,3 @@ def _ago(ts: float | None) -> str | None:
 
     elapsed = int(datetime.now(timezone.utc).timestamp() - ts)
     return f"{elapsed}s ago"
-
-
-_ = get_config

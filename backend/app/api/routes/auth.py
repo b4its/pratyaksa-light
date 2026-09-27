@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.config import AppConfig, get_config
@@ -85,8 +83,3 @@ async def me(
     if row is None:
         raise NotFoundError("User tidak ditemukan")
     return {"status": "success", "data": _user_public(row).model_dump(mode="json")}
-
-
-# keep timezone import used for potential future expiry formatting
-_ = timezone
-_ = datetime
