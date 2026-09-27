@@ -11,8 +11,6 @@
 		theme.init();
 		auth.init();
 	});
-
-	const isPanel = $derived(page.url.pathname.startsWith('/panel'));
 </script>
 
 <svelte:head>
