@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -30,21 +30,3 @@ class UserPublic(BaseModel):
 class AuthResponse(BaseModel):
     token: str
     user: UserPublic
-
-
-class UserRow(BaseModel):
-    id: str
-    name: str
-    email: str
-    password_hash: str
-    role: str
-    created_at: datetime
-    updated_at: datetime
-
-
-class ClaimsModel(BaseModel):
-    sub: str
-    email: str
-    role: str
-    exp: int
-    iat: int

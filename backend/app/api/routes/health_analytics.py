@@ -40,10 +40,6 @@ def _utcnow_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _fetch_units(db: PostgresDb, where: str = "", args: list | None = None) -> list[dict]:
-    return []  # placeholder (unused)
-
-
 @router.get("/overview", dependencies=[Depends(require_auth)])
 async def get_overview(
     db: PostgresDb = Depends(_get_db),
