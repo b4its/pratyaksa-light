@@ -71,11 +71,30 @@ def test_unit_detail():
             "model_agreement": True,
             "drift_status": {"drift_detected": False},
             "digital_twin": {"brake_twin_rul": 300.0, "hydraulic_twin_rul": 400.0},
+            "processed_at": 1719400000.0,
         },
     )
     assert "HD785-001" in m
     assert "WARNING" in m
     assert "512" in m
+
+
+def test_unit_detail_includes_last_processed():
+    m = msg.build_unit_detail("live", {"asset_id": "X", "processed_at": 1719400000.0})
+    assert "Last processed" in m
+    assert "UTC" in m
+    # Missing/invalid processed_at degrades to N/A.
+    m2 = msg.build_unit_detail("live", {"asset_id": "X"})
+    assert "Last processed: N/A" in m2 or "Last processed:</b> N/A" in m2
+
+
+def test_format_processed_at():
+    assert msg.format_processed_at(0) == "N/A"
+    assert msg.format_processed_at(None) == "N/A"
+    assert msg.format_processed_at("bad") == "N/A"
+    out = msg.format_processed_at(1719400000.0)
+    assert out.endswith("UTC")
+    assert out.startswith("202")
 
 
 def test_detail_report():

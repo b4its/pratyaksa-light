@@ -121,7 +121,32 @@ def build_unit_detail(mode: str, d: dict[str, Any]) -> str:
         "💡 <b>Digital Twin Prediction:</b>\n"
         f"• Brake Twin: {brake_twin:.0f} jam\n"
         f"• Hydraulic Twin: {hydraulic_twin:.0f} jam\n\n"
-        "<i>Data sinkron dengan website.</i>"
+        f"⏰ <b>Last processed:</b> {format_processed_at(d.get('processed_at'))}\n\n"
+        f"<i>Data sinkron dengan website — mode: {mode}.</i>"
+    )
+
+
+def format_processed_at(value: Any) -> str:
+    """Format an epoch-seconds ``processed_at`` as ``YYYY-MM-DD HH:MM:SS UTC``.
+
+    Mirrors the Rust ``/unit`` handler which converted the epoch to a UTC wall
+    clock (its own arithmetic, reproduced here for 1:1 output parity). Returns
+    ``"N/A"`` when the value is missing or non-positive.
+    """
+    try:
+        ts = float(value or 0.0)
+    except (TypeError, ValueError):
+        ts = 0.0
+    if ts <= 0.0:
+        return "N/A"
+    secs = int(ts)
+    days = secs // 86400
+    hours = (secs % 86400) // 3600
+    minutes = (secs % 3600) // 60
+    secs_remain = secs % 60
+    return (
+        f"{1970 + days // 365}-{(days % 365) // 30 + 1:02d}-{days % 30 + 1:02d} "
+        f"{hours:02d}:{minutes:02d}:{secs_remain:02d} UTC"
     )
 
 
