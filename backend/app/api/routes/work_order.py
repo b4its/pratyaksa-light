@@ -70,7 +70,10 @@ async def list_items(
     asset_code: str | None = Query(None),
 ) -> dict:
     _page = max(page or 1, 1)
-    _per_page = min(per_page or 20, 100)
+    # Cap raised to 500 so the dashboard's "saved work orders" table can load
+    # every record for client-side search/pagination/export (the frontend
+    # requests per_page=500).
+    _per_page = min(per_page or 20, 500)
     offset = (_page - 1) * _per_page
 
     conditions: list[str] = []

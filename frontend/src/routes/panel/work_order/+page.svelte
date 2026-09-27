@@ -232,8 +232,15 @@
 				.map((u: any, i: number) => buildItem(u, analyses[i]))
 				.sort((a: WoItem, b: WoItem) => a.rulHours - b.rulHours);
 			if (items.length) {
+				// Preserve the deep-linked (?asset=KODE) selection across refreshes,
+				// otherwise keep the current selection, else fall back to the most
+				// urgent unit.
+				const fromQuery = pageStore.url.searchParams.get('asset');
+				const match = fromQuery
+					? items.find((it) => it.code.toLowerCase() === fromQuery.toLowerCase())
+					: undefined;
 				if (!selectedCode || !items.find((it) => it.code === selectedCode)) {
-					selectedCode = items[0].code;
+					selectedCode = (match || items[0]).code;
 				}
 			} else {
 				selectedCode = null;
