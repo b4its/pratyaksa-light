@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Request, status
 
-from app.core.deps import require_auth
+from app.core.deps import get_postgres, require_auth
 from app.core.errors import NotFoundError, ValidationError
 from app.db.postgres import PostgresDb
 from app.schemas.work_order import CreateWorkOrderRequest, UpdateWorkOrderRequest
@@ -15,7 +15,7 @@ WO_NUMBER_EXPR = "'WO-' || LPAD(seq::text, 5, '0') AS wo_number"
 
 
 def _get_db(request: Request) -> PostgresDb:
-    return request.app.state.pg
+    return get_postgres(request)
 
 
 def _serialize(row) -> dict:

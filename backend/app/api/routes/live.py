@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query, Request
 
+from app.core.deps import get_mongo
 from app.core.errors import NotFoundError
 from app.db.mongo import MongoDb
 
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/live", tags=["live"])
 
 
 def _get_mongo(request: Request) -> MongoDb:
-    return request.app.state.mongo
+    return get_mongo(request)
 
 
 def _serialize(doc: dict) -> dict:

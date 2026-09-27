@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Request, status
 
-from app.core.deps import require_auth
+from app.core.deps import get_postgres, require_auth
 from app.core.errors import NotFoundError
 from app.db.postgres import PostgresDb
 from app.schemas.telemetry import CreateTelemetryRequest
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/telemetry", tags=["telemetry"])
 
 
 def _get_db(request: Request) -> PostgresDb:
-    return request.app.state.pg
+    return get_postgres(request)
 
 
 def _serialize(row) -> dict:

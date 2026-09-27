@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.config import AppConfig, get_config
-from app.core.deps import require_auth
+from app.core.deps import get_postgres, require_auth
 from app.core.errors import ConflictError, NotFoundError, UnauthorizedError
 from app.core.security import Claims, create_token, hash_password, new_uuid, verify_password
 from app.db.postgres import PostgresDb
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _get_db(request: Request) -> PostgresDb:
-    return request.app.state.pg
+    return get_postgres(request)
 
 
 def _user_public(row) -> UserPublic:

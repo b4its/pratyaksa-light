@@ -72,3 +72,31 @@ async def test_send_alert_without_bot_returns_502(client):
     )
     assert resp.status_code in (502, 200)
     assert resp.json()["status"] in ("error", "success")
+
+
+@pytest.mark.asyncio
+async def test_live_routes_degrade_cleanly_without_mongo(client):
+    # When MongoDB is unavailable the live routes must return a clean 503
+    # envelope (never an unhandled 500). When it *is* available, they return
+    # 200 — accept either, but require the app envelope shape.
+    resp = await client.get("/api/v1/live/stats")
+    assert resp.status_code in (200, 503)
+    body = resp.json()
+    assert body["status"] in ("success", "error")
+    if resp.status_code == 503:
+        assert "MongoDB" in body["message"]
+
+
+def test_get_mongo_dependency_raises_clean_503():
+    from types import SimpleNamespace
+
+    from app.core.deps import get_mongo
+    from app.core.errors import ServiceUnavailableError
+
+    req = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(mongo=None)))
+    try:
+        get_mongo(req)  # type: ignore[arg-type]
+        raise AssertionError("expected ServiceUnavailableError")
+    except ServiceUnavailableError as exc:
+        assert exc.status_code == 503
+        assert "MongoDB" in exc.message

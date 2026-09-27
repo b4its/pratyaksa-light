@@ -61,6 +61,10 @@ class BadGatewayError(AppError):
     status_code = status.HTTP_502_BAD_GATEWAY
 
 
+class ServiceUnavailableError(AppError):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+
 async def app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
     return exc.to_response()
 

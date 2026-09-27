@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Request
 
-from app.core.deps import require_auth
+from app.core.deps import get_postgres, require_auth
 from app.core.errors import BadRequestError, NotFoundError
 from app.db.postgres import PostgresDb
 from app.pratyaksa.state import (
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/analisa", tags=["analisa-health"])
 
 
 def _get_db(request: Request) -> PostgresDb:
-    return request.app.state.pg
+    return get_postgres(request)
 
 
 def _get_state(request: Request) -> SharedPratyaksaState:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Request, status
 
-from app.core.deps import require_auth
+from app.core.deps import get_postgres, require_auth
 from app.core.errors import ConflictError, NotFoundError
 from app.core.security import new_uuid
 from app.db.postgres import PostgresDb
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/jenis-alat-berat", tags=["jenis-alat-berat"])
 
 
 def _get_db(request: Request) -> PostgresDb:
-    return request.app.state.pg
+    return get_postgres(request)
 
 
 def _serialize(row) -> dict:

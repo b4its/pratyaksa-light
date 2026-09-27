@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, Request, status
 
-from app.core.deps import require_auth
+from app.core.deps import get_mongo, require_auth
 from app.core.errors import BadRequestError, InternalError, NotFoundError, ValidationError
 from app.db.mongo import MongoDb
 from app.schemas.analisa import CreateAnalisaRequest, UpdateAnalisaRequest
@@ -20,7 +20,7 @@ VALID_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED"]
 
 
 def _get_mongo(request: Request) -> MongoDb:
-    return request.app.state.mongo
+    return get_mongo(request)
 
 
 def _utcnow() -> datetime:

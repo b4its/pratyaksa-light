@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Request
 
-from app.core.deps import require_auth
+from app.core.deps import get_postgres, require_auth
 from app.db.postgres import PostgresDb
 from app.pratyaksa.state import PratyaksaMode, SharedPratyaksaState
 
@@ -26,7 +26,7 @@ OPERATORS = [
 
 
 def _get_db(request: Request) -> PostgresDb:
-    return request.app.state.pg
+    return get_postgres(request)
 
 
 def _get_state(request: Request) -> SharedPratyaksaState:
