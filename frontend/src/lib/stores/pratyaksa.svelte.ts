@@ -31,6 +31,9 @@ class PratyaksaStore {
 	error = $state<string | null>(null);
 	sourceMode = $state<SourceMode>('live-silent');
 
+	mlTargetUrl = env.PUBLIC_ML_TARGET_URL || 'http://192.168.101.3:6000';
+	customTargetUrl = env.PUBLIC_CUSTOM_TARGET_URL || 'http://192.168.101.3:7000';
+
 	private timer: ReturnType<typeof setInterval> | null = null;
 
 	get isLive() {

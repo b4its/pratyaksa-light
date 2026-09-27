@@ -439,6 +439,46 @@ body {
 	cursor: not-allowed;
 }
 
+/* ---- Metric cells (telemetry grids) ---- */
+.cell {
+	background: var(--surface-2);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 0.6rem;
+	text-align: center;
+}
+.cell-danger {
+	background: rgba(224, 65, 62, 0.12) !important;
+	border-color: rgba(224, 65, 62, 0.4) !important;
+	color: var(--critical) !important;
+}
+.cell-warn {
+	background: rgba(224, 161, 6, 0.14) !important;
+	border-color: rgba(224, 161, 6, 0.45) !important;
+	color: var(--warning) !important;
+}
+.cell-label {
+	font-size: 0.6rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-faint);
+}
+.cell-danger .cell-label,
+.cell-warn .cell-label {
+	color: inherit;
+	opacity: 0.85;
+}
+.cell-val {
+	font-weight: 700;
+	margin-top: 0.15rem;
+	color: var(--text);
+}
+.cell-danger .cell-val,
+.cell-warn .cell-val {
+	color: inherit;
+}
+
 /* ---- Animations ---- */
 @keyframes fadeInUp {
 	from {
