@@ -652,3 +652,78 @@ body {
 	animation: progressGrow 0.9s cubic-bezier(0.34, 1.2, 0.64, 1) both;
 }
 
+/* ---- Landing: aurora background & adaptive navbar ---- */
+.aurora-wrap {
+	overflow: hidden;
+}
+.aurora {
+	position: absolute;
+	border-radius: 50%;
+	filter: blur(70px);
+	opacity: 0.5;
+	pointer-events: none;
+}
+.aurora-a {
+	width: 40rem;
+	height: 40rem;
+	top: -12rem;
+	left: -10rem;
+	background: radial-gradient(circle, rgba(242, 166, 12, 0.45), transparent 65%);
+	animation: auroraFloatA 16s ease-in-out infinite;
+}
+.aurora-b {
+	width: 34rem;
+	height: 34rem;
+	bottom: -14rem;
+	right: -8rem;
+	background: radial-gradient(circle, rgba(62, 146, 204, 0.4), transparent 65%);
+	animation: auroraFloatB 20s ease-in-out infinite;
+}
+.aurora-c {
+	width: 28rem;
+	height: 28rem;
+	top: 20%;
+	right: 25%;
+	background: radial-gradient(circle, rgba(194, 112, 61, 0.35), transparent 65%);
+	animation: auroraFloatA 24s ease-in-out infinite reverse;
+}
+.aurora-soft {
+	position: absolute;
+	width: 46rem;
+	height: 46rem;
+	top: -16rem;
+	right: -14rem;
+	background: radial-gradient(circle, rgba(242, 166, 12, 0.16), transparent 65%);
+	animation: auroraFloatB 22s ease-in-out infinite;
+}
+@keyframes auroraFloatA {
+	0%,
+	100% {
+		transform: translate(0, 0) scale(1);
+	}
+	50% {
+		transform: translate(40px, 30px) scale(1.08);
+	}
+}
+@keyframes auroraFloatB {
+	0%,
+	100% {
+		transform: translate(0, 0) scale(1);
+	}
+	50% {
+		transform: translate(-50px, -20px) scale(1.05);
+	}
+}
+
+.nav-bar--light {
+	background: color-mix(in srgb, var(--surface) 85%, transparent);
+	border-color: var(--border);
+	color: var(--text);
+}
+.nav-bar--dark {
+	background: color-mix(in srgb, #0c1014 80%, transparent);
+	border-color: rgba(255, 255, 255, 0.12);
+	color: #fff;
+}
+
+

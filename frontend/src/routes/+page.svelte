@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import AppLogo from '$lib/components/AppLogo.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
@@ -7,17 +7,105 @@
 
 	let menuOpen = $state(false);
 	let isMounted = $state(false);
+	let navOnDark = $state(true);
+	let navEl: HTMLElement | null = $state(null);
+	let shape1: HTMLElement | null = $state(null);
+	let shape2: HTMLElement | null = $state(null);
+	let shape3: HTMLElement | null = $state(null);
+	let statsSection: HTMLElement | null = $state(null);
 
 	const stats = [
-		{ label: 'Unit Terpantau', value: 50, suffix: '+', accent: '#F2A60C' },
-		{ label: 'Akurasi Prediksi', value: 94, suffix: '%', accent: '#1FA971' },
-		{ label: 'Downtime Turun', value: 45, suffix: '%', accent: '#3E92CC' },
-		{ label: 'Alert < 500ms', value: 500, suffix: 'ms', accent: '#C2703D' }
+		{ label: 'Physical Availability', target: 93, suffix: '%', accent: '#1FA971' },
+		{ label: 'Akurasi AI', target: 95, suffix: '%', accent: '#3E92CC' },
+		{ label: 'Reduksi Downtime', target: 45, suffix: '%', accent: '#F2A60C' },
+		{ label: 'Hemat Maintenance', target: 30, suffix: '%', accent: '#C2703D' }
 	];
+	let statDisplay = $state(stats.map(() => 0));
+	let statsAnimated = false;
+
+	function animateStats() {
+		if (statsAnimated) return;
+		statsAnimated = true;
+		stats.forEach((s, i) => {
+			const start = performance.now();
+			const dur = 1400;
+			const step = (now: number) => {
+				const t = Math.min((now - start) / dur, 1);
+				const eased = 1 - Math.pow(1 - t, 3);
+				statDisplay[i] = Math.round(s.target * eased);
+				if (t < 1) requestAnimationFrame(step);
+			};
+			requestAnimationFrame(step);
+		});
+	}
+
+	function updateNavContrast() {
+		if (typeof window === 'undefined' || !navEl) return;
+		const probeY = navEl.getBoundingClientRect().height / 2;
+		const darkEls = [
+			document.querySelector('header.hero-bg'),
+			document.getElementById('solusi'),
+			document.querySelector('footer.section-dark')
+		].filter(Boolean) as HTMLElement[];
+		let onDark = false;
+		for (const el of darkEls) {
+			const r = el.getBoundingClientRect();
+			if (r.top <= probeY && r.bottom >= probeY) {
+				onDark = true;
+				break;
+			}
+		}
+		navOnDark = onDark;
+	}
+
+	function onMove(e: MouseEvent) {
+		const cx = window.innerWidth / 2;
+		const cy = window.innerHeight / 2;
+		const dx = (e.clientX - cx) / cx;
+		const dy = (e.clientY - cy) / cy;
+		if (shape1) shape1.style.transform = `translate(${dx * 30}px, ${dy * 30}px)`;
+		if (shape2) shape2.style.transform = `translate(${dx * -25}px, ${dy * -25}px)`;
+		if (shape3) shape3.style.transform = `translate(${dx * 40}px, ${dy * 40}px)`;
+	}
+
+	let statsObs: IntersectionObserver | null = null;
+	let contrastTimers: ReturnType<typeof setTimeout>[] = [];
 
 	onMount(() => {
 		auth.init();
+		theme.init();
 		isMounted = true;
+		window.addEventListener('mousemove', onMove);
+		window.addEventListener('scroll', updateNavContrast, { passive: true });
+		window.addEventListener('resize', updateNavContrast);
+		updateNavContrast();
+		requestAnimationFrame(updateNavContrast);
+		contrastTimers.push(setTimeout(updateNavContrast, 300));
+
+		if (statsSection && 'IntersectionObserver' in window) {
+			statsObs = new IntersectionObserver(
+				(entries) => {
+					entries.forEach((en) => {
+						if (en.isIntersecting) {
+							animateStats();
+							statsObs?.disconnect();
+						}
+					});
+				},
+				{ threshold: 0.3 }
+			);
+			statsObs.observe(statsSection);
+		} else {
+			animateStats();
+		}
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('mousemove', onMove);
+		window.removeEventListener('scroll', updateNavContrast);
+		window.removeEventListener('resize', updateNavContrast);
+		statsObs?.disconnect();
+		contrastTimers.forEach((t) => clearTimeout(t));
 	});
 
 	function logout() {
@@ -28,9 +116,12 @@
 
 <div class="min-h-screen text-[color:var(--text)] bg-[color:var(--bg)] selection:bg-amber selection:text-graphite-900 font-sans transition-colors duration-500 overflow-x-clip">
 	<!-- NAV -->
-	<nav class="sticky top-0 z-50 backdrop-blur-md border-b border-[color:var(--border)] bg-[color:var(--surface)]/85 px-6 py-3.5 flex justify-between items-center w-full">
+	<nav
+		bind:this={navEl}
+		class="{navOnDark ? 'nav-bar--dark' : 'nav-bar--light'} nav-bar sticky top-0 z-50 backdrop-blur-md border-b px-6 py-3.5 flex justify-between items-center w-full transition-colors duration-500"
+	>
 		<a href="/" class="flex items-center cursor-pointer group">
-			<AppLogo height="2.25rem" />
+			<AppLogo height="2.25rem" onDark={navOnDark} />
 		</a>
 
 		<div class="hidden xl:flex gap-7 font-semibold items-center text-sm">
@@ -49,8 +140,12 @@
 			</button>
 
 			{#if auth.isAuthenticated}
+				<div class="hidden xl:flex items-center gap-2.5 pl-1 pr-3 py-1.5 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)]">
+					<div class="w-8 h-8 rounded-full bg-steel-gradient flex items-center justify-center text-white font-bold text-xs">{(auth.user?.name || 'A').charAt(0).toUpperCase()}</div>
+					<span class="font-semibold text-sm truncate text-[color:var(--text)]" style="max-width:120px;">{auth.user?.name || 'Operator'}</span>
+				</div>
 				<a href="/panel/dashboard" class="btn btn-amber px-6 hidden sm:inline-flex">Buka Dashboard →</a>
-				<button onclick={logout} class="btn btn-ghost !p-2.5" title="Keluar">
+				<button onclick={logout} class="btn btn-ghost !p-2.5" title="Keluar" aria-label="Keluar">
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
 				</button>
 			{:else}
@@ -70,7 +165,12 @@
 			<a href="#keunggulan" onclick={() => (menuOpen = false)} class="py-3 border-b border-[color:var(--border)]">Keunggulan</a>
 			<div class="mt-6 flex flex-col gap-3">
 				{#if auth.isAuthenticated}
+					<div class="flex items-center gap-3 p-3 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)]">
+						<div class="w-9 h-9 rounded-full bg-steel-gradient flex items-center justify-center text-white font-bold text-sm">{(auth.user?.name || 'A').charAt(0).toUpperCase()}</div>
+						<span class="font-semibold truncate">{auth.user?.name || 'Operator'}</span>
+					</div>
 					<a href="/panel/dashboard" class="btn btn-amber w-full !py-3.5">Buka Dashboard →</a>
+					<button onclick={() => { logout(); menuOpen = false; }} class="btn btn-ghost w-full !py-3.5">Keluar</button>
 				{:else}
 					<a href="/account/login" class="btn btn-ghost w-full !py-3.5">Masuk</a>
 					<a href="/account/register" class="btn btn-amber w-full !py-3.5">Daftar Gratis</a>
@@ -80,9 +180,17 @@
 	{/if}
 
 	<!-- HERO -->
-	<header class="relative overflow-hidden hero-bg text-white">
+	<header class="relative overflow-hidden hero-bg text-white transition-colors duration-500">
+		<div class="aurora-wrap absolute inset-0 pointer-events-none">
+			<span class="aurora aurora-a"></span>
+			<span class="aurora aurora-b"></span>
+			<span class="aurora aurora-c"></span>
+		</div>
 		<div class="absolute inset-0 bg-mesh opacity-25"></div>
 		<div class="absolute inset-0 bg-topo opacity-20"></div>
+		<div bind:this={shape1} class="parallax absolute top-20 left-10 w-24 h-24 rounded-2xl border border-amber/40 bg-amber/10 backdrop-blur-sm hidden md:block anim-float"></div>
+		<div bind:this={shape2} class="parallax absolute bottom-28 right-20 w-20 h-20 rounded-full border border-steel/50 bg-steel/10 hidden md:block anim-float" style="animation-delay:1s"></div>
+		<div bind:this={shape3} class="parallax absolute top-1/3 right-1/3 w-14 h-14 rounded-xl border border-white/15 bg-white/5 hidden lg:block anim-float" style="animation-delay:.5s"></div>
 		<div class="relative z-10 max-w-7xl mx-auto px-6 py-20 md:py-28 grid lg:grid-cols-2 gap-12 items-center">
 			<div class="anim-left">
 				<div class="inline-flex items-center gap-2 bg-amber/15 text-amber border border-amber/40 px-4 py-1.5 rounded-full font-semibold uppercase text-xs tracking-wider mb-6">
@@ -146,11 +254,11 @@
 	</div>
 
 	<!-- STATS -->
-	<section class="py-16 px-6 md:px-20 bg-[color:var(--bg)] bg-ore-dots">
+	<section bind:this={statsSection} class="py-16 px-6 md:px-20 bg-[color:var(--bg)] bg-ore-dots">
 		<div class="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6">
-			{#each stats as s (s.label)}
+			{#each stats as s, i (s.label)}
 				<div class="kpi p-6 text-center" style="--accent:{s.accent}">
-					<p class="font-display text-4xl md:text-5xl font-bold" style="color:{s.accent}">{s.value}{s.suffix}</p>
+					<p class="font-display text-4xl md:text-5xl font-bold" style="color:{s.accent}">{statDisplay[i]}{s.suffix}</p>
 					<p class="text-xs font-semibold uppercase tracking-wider mt-2 text-[color:var(--text-muted)]">{s.label}</p>
 				</div>
 			{/each}
@@ -173,6 +281,7 @@
 
 	<!-- SOLUSI -->
 	<section id="solusi" class="py-24 px-6 md:px-20 section-dark text-white relative overflow-hidden">
+		<span class="aurora aurora-soft"></span>
 		<div class="absolute inset-0 bg-topo opacity-20"></div>
 		<div class="max-w-7xl mx-auto relative z-10">
 			<span class="badge bg-amber/15 border-amber/40 text-amber mb-5">End-to-End</span>
@@ -197,7 +306,7 @@
 						<svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
 					</div>
 					<h3 class="font-display text-2xl font-bold uppercase mb-3 tracking-wide">Automated Alerting</h3>
-					<p class="text-graphite-200 leading-relaxed flex-grow">Sistem preskriptif otomatis yang merilis tiket perbaikan via Telegram ke tim mekanik.</p>
+					<p class="text-graphite-200 leading-relaxed flex-grow">Sistem preskriptif otomatis yang merilis tiket perbaikan via Telegram & WhatsApp ke tim mekanik.</p>
 				</div>
 			</div>
 		</div>
@@ -232,14 +341,36 @@
 				</div>
 			</div>
 			<div class="w-full lg:w-1/2 space-y-6">
-				<span class="badge bg-steel/10 border-steel/40 text-steel">Mengapa Pratyaksa</span>
-				<h2 class="font-display text-4xl md:text-5xl font-bold uppercase tracking-wide">Keunggulan <span class="text-amber">Kompetitif</span></h2>
-				<ul class="space-y-4 text-[color:var(--text-muted)]">
-					<li class="flex gap-3"><span class="text-healthy font-bold">✓</span> Prediksi RUL per komponen dengan LSTM MoE & Digital Twin</li>
-					<li class="flex gap-3"><span class="text-healthy font-bold">✓</span> Explainability SHAP untuk keputusan yang dapat dipercaya</li>
-					<li class="flex gap-3"><span class="text-healthy font-bold">✓</span> Deteksi drift sensor otomatis (Z-score)</li>
-					<li class="flex gap-3"><span class="text-healthy font-bold">✓</span> Integrasi CMMS: Work Order otomatis & feedback loop</li>
-					<li class="flex gap-3"><span class="text-healthy font-bold">✓</span> Mode Live API & Simulasi yang dapat dipilih operator</li>
+				<span class="badge bg-amber/10 border-amber/40 text-amber-deep">Keunggulan</span>
+				<h2 class="font-display text-4xl md:text-5xl font-bold uppercase tracking-wide">Kenapa <span class="text-amber">Pratyaksa?</span></h2>
+				<ul class="space-y-6">
+					<li class="flex gap-5 group">
+						<div class="w-12 h-12 shrink-0 rounded-xl bg-amber/15 border border-amber/40 flex justify-center items-center text-amber group-hover:bg-amber group-hover:text-graphite-900 transition-all">
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+						</div>
+						<div>
+							<h4 class="font-display text-2xl font-bold mb-1.5 uppercase tracking-wide">Agnostik Terhadap Merek</h4>
+							<p class="text-[color:var(--text-muted)] leading-relaxed">Sensor IoT kami terintegrasi dengan berbagai merk (Komatsu, Caterpillar, Volvo) tanpa kendala.</p>
+						</div>
+					</li>
+					<li class="flex gap-5 group">
+						<div class="w-12 h-12 shrink-0 rounded-xl bg-steel/15 border border-steel/40 flex justify-center items-center text-steel group-hover:bg-steel group-hover:text-white transition-all">
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+						</div>
+						<div>
+							<h4 class="font-display text-2xl font-bold mb-1.5 uppercase tracking-wide">Infrastruktur Berbasis Lokal</h4>
+							<p class="text-[color:var(--text-muted)] leading-relaxed">Skalabilitas tinggi. Data aman dan dapat diakses dari site tambang mana pun dengan latensi minimal.</p>
+						</div>
+					</li>
+					<li class="flex gap-5 group">
+						<div class="w-12 h-12 shrink-0 rounded-xl bg-copper/15 border border-copper/40 flex justify-center items-center text-copper group-hover:bg-copper group-hover:text-white transition-all">
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+						</div>
+						<div>
+							<h4 class="font-display text-2xl font-bold mb-1.5 uppercase tracking-wide">ROI Terukur Cepat</h4>
+							<p class="text-[color:var(--text-muted)] leading-relaxed">Klien mencatatkan penghematan biaya <b>maintenance</b> hingga 25% pada kuartal pertama implementasi.</p>
+						</div>
+					</li>
 				</ul>
 				<a href="/account/register" class="btn btn-amber !py-3.5 px-8 inline-flex">Coba Sekarang →</a>
 			</div>
