@@ -1,0 +1,5 @@
+# Pratyaksa Telegram bot — gRPC alert service + Telegram polling
+grpcio>=1.60
+grpcio-tools>=1.60
+httpx>=0.27
+python-dotenv>=1.0

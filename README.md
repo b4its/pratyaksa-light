@@ -137,8 +137,19 @@ py-pratyaksa/
 │   ├── static/                     # assets, media/models (.glb)
 │   ├── package.json
 │   └── Dockerfile
+├── telegram_bot_grpc/              # Bot Telegram (Python gRPC + long-polling)
+│   ├── bot/                        # config, messages, state, grpc_server, polling
+│   ├── proto/alert.proto           # Definisi gRPC AlertService
+│   ├── tests/                      # pytest (messages + gRPC service)
+│   ├── main.py
+│   ├── requirements.txt
+│   └── Dockerfile
 ├── nginx/nginx.conf
+├── catatan/                        # Dokumentasi proses pengembangan
+├── test/test_live_api.sh           # Skrip uji integrasi Live API
 ├── docker-compose.yml
+├── .example.docker-compose.yml
+├── API_TESTING.md
 └── .env.example
 ```
 
@@ -187,6 +198,33 @@ Semua endpoint di bawah prefix `/api/v1` (kecuali `/svc/*`).
 | POST | `/svc/send-alert` | – | Kirim alert ke bot Telegram (gRPC) |
 
 Dokumentasi interaktif: `http://localhost:8080/docs`.
+
+Selengkapnya: lihat [`API_TESTING.md`](./API_TESTING.md) dan folder
+[`catatan/`](./catatan/README.md).
+
+---
+
+## Telegram Bot
+
+Service bot (`telegram_bot_grpc/`) berjalan sebagai kontainer terpisah dan
+memiliki dua tanggung jawab:
+
+1. **gRPC server** (port 50051) — menerima `SendAlert` dari backend
+   (`POST /svc/send-alert`) lalu broadcast ke semua subscriber.
+2. **Long-polling Telegram** — perintah interaktif:
+
+| Perintah | Fungsi |
+|----------|--------|
+| `/start` | Daftar subscriber + menu inline |
+| `/status` | Ringkasan armada |
+| `/detail` | Laporan armada + detail analisa |
+| `/pratyaksa` (`/ds`) | Status mode DS API |
+| `/unit <asset_id>` | Detail prediksi satu unit |
+| `/menu` | Tampilkan menu |
+| `/down` | Berhenti berlangganan |
+
+Jalankan: `docker compose --profile bot up -d`, atau `full` untuk seluruh stack.
+Set `TELEGRAM_BOT_TOKEN` (dan opsional `TELEGRAM_CHAT_ID`).
 
 ---
 

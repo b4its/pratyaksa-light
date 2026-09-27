@@ -8,6 +8,10 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
+# Telegram bot generated stubs & runtime data
+telegram_bot_grpc/_generated/
+telegram_bot_grpc/data/
+
 # Node / frontend
 node_modules/
 frontend/build/

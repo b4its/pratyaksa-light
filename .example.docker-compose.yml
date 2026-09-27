@@ -1,13 +1,22 @@
-services:
+# ============================================================
+# CONTOH alternatif docker-compose (tanpa profile).
+#
+# Docker compose utama (docker-compose.yml) memakai `profiles` sehingga
+# service tidak ikut jalan kecuali profilnya diaktifkan:
+#     docker compose --profile full up -d
+#
+# File INI menghapus mekanisme profile dan hanya menyertakan service inti
+# (postgres, mongodb, backend, frontend, nginx) supaya `docker compose up -d`
+# langsung menyalakan seluruh stack.
+#
+# Salin menjadi docker-compose.yml jika ingin gaya tanpa profile.
+# ============================================================
 
-  # ============================================================
-  # DATABASE SERVICES (profile: db)
-  # ============================================================
+services:
 
   postgres:
     image: postgres:16-alpine
     container_name: py-pratyaksa-postgres
-    profiles: ["db", "backend", "full"]
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-pratyaksa}
@@ -28,7 +37,6 @@ services:
   mongodb:
     image: mongo:7.0
     container_name: py-pratyaksa-mongodb
-    profiles: ["db", "backend", "full"]
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-pratyaksa}
@@ -46,16 +54,11 @@ services:
     networks:
       - pratyaksa-net
 
-  # ============================================================
-  # BACKEND SERVICE — Python + FastAPI (profile: backend)
-  # ============================================================
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: py-pratyaksa-backend
-    profiles: ["backend", "full"]
     restart: unless-stopped
     depends_on:
       postgres:
@@ -70,12 +73,8 @@ services:
       MONGODB_NAME: ${MONGO_DB:-pratyaksa}
       JWT_SECRET: ${JWT_SECRET:-super_secret_pratyaksa_key_change_in_production}
       JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-24}
-      PRATYAKSA_API_URL: ${ML_TARGET_URL:-http://ml-api:6000}
+      PRATYAKSA_API_URL: ${ML_TARGET_URL:-http://192.168.101.3:6000}
       PRATYAKSA_API_KEY: ${LIVE_API_KEY:-dev-key-pratyaksa}
-      ML_POSTGRES_URL: ${ML_POSTGRES_URL:-postgresql://pratyaksa:pratyaksa_secret@ml-postgres:5432/pratyaksa}
-      PRATYAKSA_POLL_INTERVAL: ${PRATYAKSA_POLL_INTERVAL:-5}
-      ML_SYNC_INTERVAL: ${ML_SYNC_INTERVAL:-60}
-      MONGO_BATCH_SIZE: ${MONGO_BATCH_SIZE:-100}
       TELEGRAM_GRPC_TARGET: ${TELEGRAM_GRPC_TARGET:-telegram-bot:50051}
       MEDIA_DIR: /app/media/models
     volumes:
@@ -91,23 +90,16 @@ services:
       retries: 10
       start_period: 15s
 
-  # ============================================================
-  # TELEGRAM BOT SERVICE — Python gRPC + long-polling
-  # Dipanggil backend via gRPC; meneruskan alert ke Telegram.
-  # ============================================================
-
   telegram-bot:
     build:
       context: ./telegram_bot_grpc
       dockerfile: Dockerfile
     container_name: py-pratyaksa-telegram-bot
-    profiles: ["bot", "full"]
     restart: unless-stopped
     environment:
       GRPC_HOST: 0.0.0.0
       GRPC_PORT: 50051
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-token}
-      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       BACKEND_URL: ${BOT_BACKEND_URL:-http://backend:8080}
       WO_LINK_BASE: ${WO_LINK_BASE:-http://10.40.2.117}
       SUBSCRIBERS_FILE: /app/data/subscribers.json
@@ -118,10 +110,6 @@ services:
     networks:
       - pratyaksa-net
 
-  # ============================================================
-  # FRONTEND SERVICE — SvelteKit (profile: full)
-  # ============================================================
-
   frontend:
     build:
       context: ./frontend
@@ -129,7 +117,6 @@ services:
       args:
         PUBLIC_API_BASE: /api/v1
     container_name: py-pratyaksa-frontend
-    profiles: ["full"]
     restart: unless-stopped
     depends_on:
       backend:
@@ -144,17 +131,9 @@ services:
     networks:
       - pratyaksa-net
 
-  # ============================================================
-  # NGINX — Reverse proxy, single entry point (profile: full)
-  #   /api/*  -> backend:8080
-  #   /svc/*  -> backend:8080
-  #   /*      -> frontend:3000
-  # ============================================================
-
   nginx:
     image: nginx:1.27-alpine
     container_name: py-pratyaksa-nginx
-    profiles: ["full"]
     restart: unless-stopped
     depends_on:
       - frontend
@@ -166,58 +145,11 @@ services:
     networks:
       - pratyaksa-net
 
-  # ============================================================
-  # OPTIONAL: Mongo Express UI (profile: tools)
-  # ============================================================
-
-  mongo-express:
-    image: mongo-express:1.0.2
-    container_name: py-pratyaksa-mongo-express
-    profiles: ["tools"]
-    restart: unless-stopped
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER:-pratyaksa}
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-pratyaksa_secret}
-      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USER:-pratyaksa}:${MONGO_PASSWORD:-pratyaksa_secret}@mongodb:27017/
-      ME_CONFIG_BASICAUTH: "false"
-    ports:
-      - "${MONGO_EXPRESS_PORT:-8081}:8081"
-    networks:
-      - pratyaksa-net
-
-  # ============================================================
-  # OPTIONAL: pgAdmin UI (profile: tools)
-  # ============================================================
-
-  pgadmin:
-    image: dpage/pgadmin4:8
-    container_name: py-pratyaksa-pgadmin
-    profiles: ["tools"]
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@pratyaksa.id}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-    ports:
-      - "${PGADMIN_PORT:-5050}:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - pratyaksa-net
-
 volumes:
   postgres_data:
     name: py_pratyaksa_postgres_data
   mongo_data:
     name: py_pratyaksa_mongo_data
-  pgadmin_data:
-    name: py_pratyaksa_pgadmin_data
   media_models:
     name: py_pratyaksa_media_models
   bot_data:

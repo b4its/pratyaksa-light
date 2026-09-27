@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package alert;
+
+// Layanan pengiriman alert ke Telegram untuk PRATYAKSA.
+service AlertService {
+  // Kirim satu alert ke Telegram. Dipanggil oleh server Nuxt saat unit CRITICAL.
+  rpc SendAlert(AlertRequest) returns (AlertResponse);
+
+  // Cek kesehatan service + ringkasan in-memory fleet cache.
+  rpc HealthCheck(HealthRequest) returns (HealthResponse);
+}
+
+message AlertRequest {
+  string asset_id  = 1;
+  string model     = 2;
+  string lokasi    = 3;
+  string status    = 4;
+  string rul       = 5;
+  string shap1     = 6;
+  string shap2     = 7;
+  string part_name = 8;
+  string part_no   = 9;
+  string stok      = 10;
+}
+
+message AlertResponse {
+  bool   success  = 1;
+  string message  = 2;
+  string asset_id = 3;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool  ok             = 1;
+  int32 fleet_total    = 2;
+  int32 fleet_critical = 3;
+}
