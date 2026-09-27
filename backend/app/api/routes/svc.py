@@ -27,7 +27,14 @@ router = APIRouter(prefix="/svc", tags=["svc"])
 
 ALLOWED_EXT = [".glb", ".gltf"]
 MAX_BYTES = 50 * 1024 * 1024  # 50 MB
-MEDIA_DIR = Path(os.environ.get("MEDIA_DIR", "./media/models"))
+DEFAULT_MEDIA_DIR = Path(os.environ.get("MEDIA_DIR", "./media/models"))
+
+
+def _media_dir(request: Request) -> Path:
+    """Resolve the media directory from app config (falls back to env)."""
+    config = getattr(request.app.state, "config", None)
+    configured = getattr(config, "media_dir", None)
+    return Path(configured) if configured else DEFAULT_MEDIA_DIR
 
 
 def _grpc_target(request: Request) -> str:
@@ -37,7 +44,7 @@ def _grpc_target(request: Request) -> str:
 
 
 @router.post("/upload-model")
-async def upload_model(file: UploadFile = File(...)) -> JSONResponse:
+async def upload_model(request: Request, file: UploadFile = File(...)) -> JSONResponse:
     original = (file.filename or "model.glb").lower()
     ext = os.path.splitext(original)[1]
     if ext not in ALLOWED_EXT:
@@ -52,9 +59,10 @@ async def upload_model(file: UploadFile = File(...)) -> JSONResponse:
             content={"status": "error", "message": "Ukuran file maksimal 50 MB."},
         )
 
-    MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+    media_dir = _media_dir(request)
+    media_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"{int(time.time())}-{uuid.uuid4().hex[:8]}{ext}"
-    (MEDIA_DIR / safe_name).write_bytes(data)
+    (media_dir / safe_name).write_bytes(data)
 
     return JSONResponse(
         {

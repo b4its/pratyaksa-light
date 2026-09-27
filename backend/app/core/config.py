@@ -47,6 +47,7 @@ class AppConfig:
     mongo_batch_size: int = 100
     mongo_db_required: bool = True
     telegram_grpc_target: str = "telegram-bot:50051"
+    media_dir: str = "./media/models"
     cors_origins: list[str] = field(default_factory=lambda: ["*"])
 
     @classmethod
@@ -84,6 +85,7 @@ class AppConfig:
             not in ("0", "false", "no"),
             telegram_grpc_target=_env("TELEGRAM_GRPC_TARGET", "telegram-bot:50051")
             or "telegram-bot:50051",
+            media_dir=_env("MEDIA_DIR", "./media/models") or "./media/models",
             cors_origins=origins,
         )
 

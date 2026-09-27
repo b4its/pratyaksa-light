@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import configure_v1
 from app.api.routes import svc as svc_routes
@@ -137,6 +140,14 @@ def create_app() -> FastAPI:
 
     app.include_router(configure_v1())
     app.include_router(svc_routes.router)
+
+    # Serve uploaded 3D models. ``/svc/upload-model`` writes to
+    # ``config.media_dir`` (…/media/models) and returns ``/media/models/<file>``,
+    # so we mount the media *root* (parent of the models dir) at ``/media``.
+    models_dir = Path(config.media_dir)
+    media_root = models_dir.parent
+    media_root.mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=str(media_root)), name="media")
 
     return app
 

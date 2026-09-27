@@ -51,6 +51,19 @@ async def test_validation_error_uses_400_and_envelope(client):
 
 
 @pytest.mark.asyncio
+async def test_uploaded_model_is_served_via_static_mount(client):
+    files = {"file": ("unit.glb", io.BytesIO(b"glTF-binary-payload"), "model/gltf-binary")}
+    resp = await client.post("/api/v1/svc/upload-model", files=files)
+    assert resp.status_code == 200
+    url = resp.json()["url"]
+    assert url.startswith("/media/models/")
+
+    fetched = await client.get(url)
+    assert fetched.status_code == 200
+    assert fetched.content == b"glTF-binary-payload"
+
+
+@pytest.mark.asyncio
 async def test_send_alert_without_bot_returns_502(client):
     # No telegram bot running in tests → graceful 502 with envelope.
     resp = await client.post(
