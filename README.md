@@ -157,7 +157,8 @@ py-pratyaksa/
 
 ## API Endpoints
 
-Semua endpoint di bawah prefix `/api/v1` (kecuali `/svc/*`).
+Semua endpoint di bawah prefix `/api/v1`. Endpoint service (`/svc/*`) juga
+tersedia di bawah `/api/v1/svc/*` agar konsisten dengan base URL frontend.
 
 | Method | Path | Auth | Deskripsi |
 |--------|------|:----:|-----------|
@@ -194,8 +195,8 @@ Semua endpoint di bawah prefix `/api/v1` (kecuali `/svc/*`).
 | GET | `/live/fleet` | – | Fleet snapshot tersimpan |
 | GET | `/live/work-orders` | – | Work order tersimpan (live) |
 | GET | `/live/stats` | – | Statistik data live |
-| POST | `/svc/upload-model` | – | Upload model 3D (.glb/.gltf) |
-| POST | `/svc/send-alert` | – | Kirim alert ke bot Telegram (gRPC) |
+| POST | `/svc/upload-model` | – | Upload model 3D (.glb/.gltf) — juga di `/api/v1/svc/upload-model` |
+| POST | `/svc/send-alert` | – | Kirim alert ke bot Telegram (gRPC) — juga di `/api/v1/svc/send-alert` |
 
 Dokumentasi interaktif: `http://localhost:8080/docs`.
 
