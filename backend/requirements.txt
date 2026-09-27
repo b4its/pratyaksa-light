@@ -8,7 +8,7 @@ python-dotenv>=1.0
 bcrypt>=4.1
 python-jose[cryptography]>=3.3
 asyncpg>=0.29
-pymongo>=4.7
+pymongo>=4.9
 httpx>=0.27
 python-multipart>=0.0.9
 # Optional: Telegram alert over gRPC (matches Rust telegram_bot_grpc service)

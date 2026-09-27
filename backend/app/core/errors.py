@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 
@@ -76,6 +77,34 @@ async def generic_exception_handler(_request: Request, exc: Exception) -> JSONRe
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"status": "error", "message": f"Internal server error: {exc}"},
+    )
+
+
+def _format_validation_errors(exc: RequestValidationError) -> str:
+    """Render Pydantic validation errors as a single human-readable message.
+
+    The Rust backend (via ``validator``) returned HTTP 400 with the message
+    ``{"status":"error","message":"..."}``; we reproduce that envelope here.
+    """
+    parts: list[str] = []
+    for err in exc.errors():
+        loc = ".".join(str(p) for p in err.get("loc", ()) if p not in ("body", "query", "path"))
+        msg = err.get("msg", "invalid value")
+        parts.append(f"{loc}: {msg}" if loc else msg)
+    return "; ".join(parts) or "Permintaan tidak valid"
+
+
+async def validation_exception_handler(
+    _request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """Map request-body/query validation failures to 400 + app envelope.
+
+    Matches the Rust ``JsonConfig`` error handler which produced HTTP 400 with
+    ``{"status":"error","message":...}`` instead of FastAPI's default 422.
+    """
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"status": "error", "message": _format_validation_errors(exc)},
     )
 
 

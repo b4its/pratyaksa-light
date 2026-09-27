@@ -20,6 +20,9 @@ frontend/.svelte-kit/
 frontend/static/media/models/[0-9]*-*.glb
 frontend/static/media/models/[0-9]*-*.gltf
 
+# Backend uploaded 3D models (runtime)
+backend/media/
+
 # Env
 .env
 

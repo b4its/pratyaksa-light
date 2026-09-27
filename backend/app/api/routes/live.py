@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query, Request
 
@@ -86,8 +86,8 @@ async def get_live_stats(mongo: MongoDb = Depends(_get_mongo)) -> dict:
     total_fleet = await fleet_coll.count_documents({})
     total_work_orders = await wo_coll.count_documents({})
 
-    cutoff = datetime.now(timezone.utc).timestamp() - 3600
-    recent_predictions = await pred_coll.count_documents({"processed_at": {"$gte": cutoff}})
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+    recent_predictions = await pred_coll.count_documents({"stored_at": {"$gte": cutoff}})
     critical_count = await pred_coll.count_documents({"risk_level": "CRITICAL"})
 
     return {

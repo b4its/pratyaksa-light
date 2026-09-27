@@ -46,6 +46,7 @@ class AppConfig:
     ml_sync_interval_secs: int = 60
     mongo_batch_size: int = 100
     mongo_db_required: bool = True
+    telegram_grpc_target: str = "telegram-bot:50051"
     cors_origins: list[str] = field(default_factory=lambda: ["*"])
 
     @classmethod
@@ -81,6 +82,8 @@ class AppConfig:
             mongo_batch_size=int(_env("MONGO_BATCH_SIZE", "100") or "100"),
             mongo_db_required=(_env("MONGO_REQUIRED", "true") or "true").lower()
             not in ("0", "false", "no"),
+            telegram_grpc_target=_env("TELEGRAM_GRPC_TARGET", "telegram-bot:50051")
+            or "telegram-bot:50051",
             cors_origins=origins,
         )
 

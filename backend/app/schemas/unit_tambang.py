@@ -33,7 +33,7 @@ class CreateUnitTambangRequest(BaseModel):
     status: str
     health: Annotated[int, Field(ge=0, le=100)]
     maintenance: Annotated[str, Field(min_length=1, max_length=200)]
-    savings: int = 0
+    savings: int
     img_url: Optional[str] = None
     model3d_url: Optional[str] = None
     lat: Optional[float] = None
