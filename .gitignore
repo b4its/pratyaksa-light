@@ -12,8 +12,9 @@ venv/
 node_modules/
 frontend/build/
 frontend/.svelte-kit/
-frontend/static/media/models/*
-!frontend/static/media/models/.gitkeep
+# Uploaded 3D models (timestamp-prefixed) are ignored; built-in showcase models are tracked.
+frontend/static/media/models/[0-9]*-*.glb
+frontend/static/media/models/[0-9]*-*.gltf
 
 # Env
 .env

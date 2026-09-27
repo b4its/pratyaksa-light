@@ -1,0 +1,29 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import PanelSidebar from '$lib/components/PanelSidebar.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+
+	let { children } = $props();
+
+	onMount(() => {
+		auth.init();
+		if (!auth.isAuthenticated) {
+			goto('/account/login');
+		}
+	});
+</script>
+
+{#if auth.isAuthenticated}
+	<div class="flex min-h-screen bg-topo text-[color:var(--text)]">
+		<PanelSidebar />
+		<main class="flex-1 min-w-0 p-4 lg:p-8">
+			{@render children()}
+		</main>
+	</div>
+{:else}
+	<div class="flex items-center justify-center h-screen text-[color:var(--text-muted)] font-semibold uppercase tracking-widest">
+		Memeriksa sesi…
+	</div>
+{/if}
