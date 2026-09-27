@@ -8,9 +8,10 @@ User → Telegram Bot (long-polling getUpdates, Python)
          ├── /start     → Register subscriber + greeting + inline menu
          ├── /status    → GET /api/v1/fleet-summary (PostgreSQL)
          ├── /detail    → Fleet + analisa lengkap
-         ├── /pratyaksa → GET /api/v1/pratyaksa/status (mode DS API)
-         ├── /unit <id> → GET /api/v1/pratyaksa/result/{asset_id}
-         └── /down      → Berhenti berlangganan
+         ├── /pratyaksa → GET /api/v1/pratyaksa/status (mode DS API) (alias /ds)
+         ├── /unit <id> → GET /api/v1/pratyaksa/result/{asset_id} (RUL + Digital Twin + Last processed)
+         ├── /menu      → Tampilkan menu inline
+         └── /down      → Berhenti berlangganan (alias /berhenti, /stop)
 
 Backend FastAPI → gRPC AlertService (grpcio client, app/services/telegram.py)
          │
