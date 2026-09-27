@@ -53,7 +53,14 @@
 				</div>
 
 				<div>
-					<label for="password" class="label">Kata Sandi</label>
+					<div class="flex justify-between items-center mb-1">
+						<label for="password" class="label !mb-0">Kata Sandi</label>
+						<button
+							type="button"
+							class="text-xs font-semibold text-steel hover:text-amber transition-colors"
+							onclick={() => alert('Hubungi administrator untuk reset kata sandi.')}
+						>Lupa sandi?</button>
+					</div>
 					<div class="relative">
 						<input
 							id="password"
@@ -70,19 +77,30 @@
 							class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-[color:var(--text-muted)] hover:text-amber transition-colors"
 							aria-label="Toggle password visibility"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+							{#if !showPassword}
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+							{:else}
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg>
+							{/if}
 						</button>
 					</div>
 				</div>
 
 				{#if errorMessage}
 					<div class="flex items-center gap-2 px-4 py-3 rounded-lg bg-critical/10 border border-critical/40 text-critical">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
 						<span class="font-semibold text-sm">{errorMessage}</span>
 					</div>
 				{/if}
 
-				<button type="submit" disabled={isLoading} class="btn btn-amber w-full !py-3.5 text-base disabled:opacity-70">
-					{isLoading ? 'Memproses…' : 'Masuk ke Sistem'}
+				<button type="submit" disabled={isLoading} class="btn btn-amber w-full !py-3.5 text-base disabled:opacity-70 justify-center gap-2">
+					{#if isLoading}
+						<span>Memproses…</span>
+						<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+					{:else}
+						<span>Masuk ke Sistem</span>
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+					{/if}
 				</button>
 			</form>
 

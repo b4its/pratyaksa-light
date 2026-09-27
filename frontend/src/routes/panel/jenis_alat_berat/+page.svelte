@@ -1,76 +1,103 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { api } from '$lib/api';
+	import ModeSelector from '$lib/components/ModeSelector.svelte';
+	import ModeLockTabel from '$lib/components/ModeLockTabel.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
 
 	let items = $state<any[]>([]);
 	let loading = $state(true);
 	let page = $state(1);
-	let perPage = 10;
+	const perPage = 5;
 	let total = $state(0);
 	let totalPages = $state(1);
 	let search = $state('');
 	let error = $state('');
-	let toast = $state<{ ok: boolean; msg: string } | null>(null);
 
 	let modalOpen = $state(false);
 	let editing = $state<any>(null);
 	let form = $state({ nama: '', deskripsi: '' });
+	let formError = $state('');
 	let saving = $state(false);
 
-	const pageNumbers = $derived(() => {
+	let detailOpen = $state(false);
+	let selectedItem = $state<any>(null);
+
+	const pageNumbers = $derived.by(() => {
 		const out: number[] = [];
-		const start = Math.max(1, page - 2);
-		const end = Math.min(totalPages, start + 4);
+		const max = 3;
+		const tp = totalPages;
+		const cp = page;
+		if (tp <= max) {
+			for (let i = 1; i <= tp; i++) out.push(i);
+			return out;
+		}
+		let start = Math.max(1, cp - 1);
+		const end = Math.min(tp, start + max - 1);
+		if (end === tp) start = Math.max(1, tp - max + 1);
 		for (let i = start; i <= end; i++) out.push(i);
 		return out;
 	});
 
-	function notify(ok: boolean, msg: string) {
-		toast = { ok, msg };
-		setTimeout(() => (toast = null), 3500);
+	function formatDate(iso: string) {
+		return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 	}
 
 	async function load() {
 		loading = true;
 		error = '';
 		try {
-			const res: any = await api.getJenisAlatBerat({ page, per_page: perPage, search });
+			const res: any = await api.getJenisAlatBerat({ page, per_page: perPage, search: search || undefined });
 			items = res.data.data;
 			total = res.data.total;
 			totalPages = res.data.total_pages || 1;
 		} catch (e: any) {
-			error = e?.message || 'Gagal memuat data';
+			error = e?.message || 'Gagal memuat data.';
 		} finally {
 			loading = false;
 		}
 	}
 
+	function onSearch() {
+		page = 1;
+		load();
+	}
+
 	function openCreate() {
 		editing = null;
 		form = { nama: '', deskripsi: '' };
+		formError = '';
 		modalOpen = true;
 	}
 	function openEdit(item: any) {
 		editing = item;
 		form = { nama: item.nama, deskripsi: item.deskripsi || '' };
+		formError = '';
 		modalOpen = true;
 	}
+	function openDetail(item: any) {
+		selectedItem = item;
+		detailOpen = true;
+	}
 
-	async function save(e: Event) {
-		e.preventDefault();
+	async function save() {
+		if (!form.nama.trim()) {
+			formError = 'Nama wajib diisi.';
+			return;
+		}
 		saving = true;
+		formError = '';
 		try {
 			if (editing) {
-				await api.updateJenisAlatBerat(editing.id, form);
-				notify(true, 'Berhasil diperbarui');
+				await api.updateJenisAlatBerat(editing.id, { nama: form.nama, deskripsi: form.deskripsi || undefined });
 			} else {
-				await api.createJenisAlatBerat(form);
-				notify(true, 'Berhasil ditambahkan');
+				await api.createJenisAlatBerat({ nama: form.nama, deskripsi: form.deskripsi || undefined });
 			}
 			modalOpen = false;
 			await load();
 		} catch (e: any) {
-			notify(false, e?.message || 'Gagal menyimpan');
+			formError = e?.message || 'Gagal menyimpan.';
 		} finally {
 			saving = false;
 		}
@@ -80,20 +107,18 @@
 		if (!confirm(`Hapus "${item.nama}"?`)) return;
 		try {
 			await api.deleteJenisAlatBerat(item.id);
-			notify(true, 'Berhasil dihapus');
 			await load();
 		} catch (e: any) {
-			notify(false, e?.message || 'Gagal menghapus');
+			alert(e?.message || 'Gagal menghapus.');
 		}
 	}
 
-	function doSearch(e: Event) {
-		e.preventDefault();
-		page = 1;
+	onMount(() => {
 		load();
-	}
-
-	onMount(load);
+		pratyaksa.fetchAll();
+		pratyaksa.startPolling(10000);
+	});
+	onDestroy(() => pratyaksa.stopPolling());
 </script>
 
 <svelte:head><title>Jenis Alat Berat — Pratyaksa</title></svelte:head>
@@ -101,46 +126,60 @@
 <header class="flex justify-between items-start mb-8 gap-4 flex-wrap">
 	<div>
 		<h1 class="font-display text-4xl md:text-5xl font-bold uppercase tracking-wide leading-none">Jenis Alat Berat</h1>
-		<p class="mt-2 text-[color:var(--text-muted)]">Master data kategori alat berat pada armada.</p>
+		<p class="mt-2 text-[color:var(--text-muted)]">Daftar kategori alat berat yang terdaftar di sistem.</p>
 	</div>
-	<button class="btn btn-amber" onclick={openCreate}>+ Tambah Jenis</button>
+	<div class="flex items-center gap-3 flex-wrap">
+		<div class="flex items-center gap-3 panel-flat px-3 py-2">
+			<div class="w-8 h-8 rounded-full bg-steel-gradient flex items-center justify-center text-white font-bold text-xs">{(auth.user?.name || 'A').charAt(0).toUpperCase()}</div>
+			<span class="font-semibold text-sm">{auth.user?.name || 'Admin'}</span>
+		</div>
+		<ModeSelector />
+	</div>
 </header>
 
-<div class="panel p-6">
-	<form onsubmit={doSearch} class="flex gap-3 mb-5 flex-wrap">
-		<input bind:value={search} placeholder="Cari nama jenis…" class="field" style="max-width:320px;" />
-		<button class="btn btn-ghost" type="submit">Cari</button>
-	</form>
+<ModeLockTabel compact />
 
-	{#if toast}
-		<div class="mb-4 px-4 py-2.5 rounded-lg text-sm font-semibold {toast.ok ? 'bg-healthy/10 text-healthy border border-healthy/30' : 'bg-critical/10 text-critical border border-critical/40'}">
-			{toast.msg}
+{#if error}<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold flex items-center gap-2">⚠️ {error}</div>{/if}
+
+<div class="flex justify-between items-center mb-6 gap-3 flex-wrap">
+	<div class="flex gap-3 flex-1 flex-wrap">
+		<div class="relative flex-1" style="min-width:12rem;">
+			<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--text-faint)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+			<input bind:value={search} onkeyup={(e) => e.key === 'Enter' && onSearch()} type="text" placeholder="Cari jenis alat berat..." class="field !pl-9" />
 		</div>
-	{/if}
-	{#if error}
-		<div class="mb-4 px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical text-sm">{error}</div>
-	{/if}
+		<button class="btn btn-ghost px-6" onclick={onSearch}>Cari</button>
+	</div>
+	<button class="btn btn-amber px-5" onclick={openCreate}>
+		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M12 5v14M5 12h14" /></svg>
+		Tambah Jenis
+	</button>
+</div>
 
+<section class="panel-raised overflow-hidden">
 	<div class="overflow-x-auto">
 		<table class="table-industrial">
 			<thead>
-				<tr><th>Nama</th><th>Deskripsi</th><th class="text-right">Aksi</th></tr>
+				<tr><th>Nama Jenis</th><th>Deskripsi</th><th>Dibuat</th><th>Aksi</th></tr>
 			</thead>
 			<tbody>
 				{#if loading}
 					{#each Array(5) as _, i (i)}
-						<tr><td colspan="3"><div class="h-4 shimmer rounded my-1"></div></td></tr>
+						<tr>{#each Array(4) as __, j (j)}<td><div class="h-4 shimmer rounded"></div></td>{/each}</tr>
 					{/each}
 				{:else if items.length === 0}
-					<tr><td colspan="3" class="text-center text-[color:var(--text-muted)] py-10">Belum ada data.</td></tr>
+					<tr><td colspan="4" class="!py-12 text-center text-[color:var(--text-faint)] font-medium">{search ? `Tidak ada hasil untuk "${search}"` : 'Belum ada data. Klik Tambah Jenis.'}</td></tr>
 				{:else}
 					{#each items as item (item.id)}
 						<tr>
 							<td class="font-semibold">{item.nama}</td>
-							<td class="text-[color:var(--text-muted)]">{item.deskripsi || '-'}</td>
-							<td class="text-right whitespace-nowrap">
-								<button class="btn btn-ghost !py-1.5 !px-3 text-xs" onclick={() => openEdit(item)}>Edit</button>
-								<button class="btn btn-danger !py-1.5 !px-3 text-xs ml-2" onclick={() => remove(item)}>Hapus</button>
+							<td class="text-sm text-[color:var(--text-muted)]" style="max-width:20rem;">{item.deskripsi || '—'}</td>
+							<td class="text-xs text-[color:var(--text-faint)] font-mono">{formatDate(item.created_at)}</td>
+							<td>
+								<div class="flex gap-2 flex-wrap">
+									<button class="btn btn-ghost !px-3 !py-1.5 text-xs" onclick={() => openDetail(item)}>Lihat</button>
+									<button class="btn btn-ghost !px-3 !py-1.5 text-xs" onclick={() => openEdit(item)}>Edit</button>
+									<button class="btn btn-danger !px-3 !py-1.5 text-xs" onclick={() => remove(item)}>Hapus</button>
+								</div>
 							</td>
 						</tr>
 					{/each}
@@ -149,38 +188,67 @@
 		</table>
 	</div>
 
-	<div class="flex items-center justify-between mt-5">
-		<span class="text-xs text-[color:var(--text-muted)]">Total {total} data</span>
-		<div class="flex items-center gap-1.5">
-			<button class="mini-pg" disabled={page <= 1} onclick={() => { page--; load(); }}>‹</button>
-			{#each pageNumbers() as p (p)}
-				<button class="mini-pg" class:!bg-amber={p === page} class:!text-graphite-900={p === page} onclick={() => { page = p; load(); }}>{p}</button>
-			{/each}
-			<button class="mini-pg" disabled={page >= totalPages} onclick={() => { page++; load(); }}>›</button>
+	<div class="px-5 py-4 border-t border-[color:var(--border)] bg-[color:var(--surface-2)] flex justify-between items-center flex-wrap gap-3">
+		<span class="text-sm text-[color:var(--text-muted)] font-medium">Total: <span class="font-mono font-semibold">{total}</span> jenis</span>
+		{#if totalPages > 1}
+			<div class="flex gap-1.5">
+				<button class="mini-pg" disabled={page === 1} onclick={() => { page = 1; load(); }}>«</button>
+				<button class="mini-pg" disabled={page === 1} onclick={() => { page--; load(); }}>‹</button>
+				{#each pageNumbers as p (p)}
+					<button class="mini-pg" class:!bg-amber={p === page} class:!border-amber={p === page} class:!text-graphite-900={p === page} onclick={() => { page = p; load(); }}>{p}</button>
+				{/each}
+				<button class="mini-pg" disabled={page === totalPages} onclick={() => { page++; load(); }}>›</button>
+				<button class="mini-pg" disabled={page === totalPages} onclick={() => { page = totalPages; load(); }}>»</button>
+			</div>
+		{/if}
+	</div>
+</section>
+
+<!-- Detail Modal -->
+{#if detailOpen && selectedItem}
+	<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
+		<div class="modal-backdrop" onclick={() => (detailOpen = false)} role="presentation"></div>
+		<div class="modal-card w-full max-w-lg anim-pop">
+			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
+				<h3 class="font-display text-2xl font-bold uppercase tracking-wide">Detail Jenis Alat Berat</h3>
+				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={() => (detailOpen = false)}>✕</button>
+			</div>
+			<div class="p-6 space-y-4">
+				<div class="panel-flat p-4"><p class="label">Nama Jenis</p><p class="text-xl font-semibold">{selectedItem.nama}</p></div>
+				<div class="panel-flat p-4"><p class="label">Deskripsi</p><p class="leading-relaxed text-[color:var(--text-muted)]">{selectedItem.deskripsi || 'Tidak ada deskripsi.'}</p></div>
+				<div class="grid grid-cols-2 gap-4">
+					<div class="panel-flat p-4"><p class="label">Dibuat</p><p class="font-semibold text-sm font-mono">{formatDate(selectedItem.created_at)}</p></div>
+					<div class="panel-flat p-4"><p class="label">Diperbarui</p><p class="font-semibold text-sm font-mono">{formatDate(selectedItem.updated_at)}</p></div>
+				</div>
+			</div>
 		</div>
 	</div>
-</div>
+{/if}
 
+<!-- Form Modal -->
 {#if modalOpen}
-	<div class="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
+	<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
 		<div class="modal-backdrop" onclick={() => (modalOpen = false)} role="presentation"></div>
-		<div class="modal-card w-full max-w-md">
-			<div class="h-1.5 hazard-stripe opacity-90"></div>
-			<form onsubmit={save} class="p-6 space-y-5">
-				<h3 class="font-display text-2xl font-bold uppercase">{editing ? 'Edit' : 'Tambah'} Jenis Alat Berat</h3>
+		<div class="modal-card w-full max-w-lg flex flex-col anim-pop">
+			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
+				<h3 class="font-display text-2xl font-bold uppercase tracking-wide">{editing ? 'Edit Jenis' : 'Tambah Jenis'}</h3>
+				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={() => (modalOpen = false)}>✕</button>
+			</div>
+			<div class="p-6 flex flex-col gap-4">
+				{#if formError}<div class="px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical font-semibold text-sm">{formError}</div>{/if}
 				<div>
-					<label for="nama" class="label">Nama</label>
-					<input id="nama" bind:value={form.nama} class="field" required minlength="2" maxlength="200" />
+					<label class="label" for="j-nama">Nama Jenis <span class="text-critical">*</span></label>
+					<input id="j-nama" bind:value={form.nama} type="text" placeholder="Cth: Caterpillar Excavator 320" class="field" />
 				</div>
 				<div>
-					<label for="deskripsi" class="label">Deskripsi</label>
-					<textarea id="deskripsi" bind:value={form.deskripsi} class="field" rows="3"></textarea>
+					<label class="label" for="j-desk">Deskripsi</label>
+					<textarea id="j-desk" bind:value={form.deskripsi} rows="3" placeholder="Deskripsi singkat tentang jenis alat berat ini..." class="field" style="resize:none;"></textarea>
 				</div>
-				<div class="flex justify-end gap-3">
-					<button type="button" class="btn btn-ghost" onclick={() => (modalOpen = false)}>Batal</button>
-					<button type="submit" class="btn btn-amber" disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan'}</button>
-				</div>
-			</form>
+			</div>
+			<div class="px-6 py-4 border-t border-[color:var(--border)] bg-[color:var(--surface-2)] flex justify-end gap-3">
+				<button class="btn btn-ghost px-6" onclick={() => (modalOpen = false)}>Batal</button>
+				<button class="btn btn-amber px-6 disabled:opacity-60" onclick={save} disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan'}</button>
+			</div>
 		</div>
 	</div>
 {/if}
