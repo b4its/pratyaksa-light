@@ -70,8 +70,9 @@ services:
       MONGODB_NAME: ${MONGO_DB:-pratyaksa}
       JWT_SECRET: ${JWT_SECRET:-super_secret_pratyaksa_key_change_in_production}
       JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-24}
-      PRATYAKSA_API_URL: ${ML_TARGET_URL:-http://ml-api:6000}
+      PRATYAKSA_API_URL: ${ML_TARGET_URL:-http://192.168.101.3:6000}
       PRATYAKSA_API_KEY: ${LIVE_API_KEY:-dev-key-pratyaksa}
+      CUSTOM_API_URL: ${CUSTOM_TARGET_URL:-http://192.168.101.3:7000}
       ML_POSTGRES_URL: ${ML_POSTGRES_URL:-postgresql://pratyaksa:pratyaksa_secret@ml-postgres:5432/pratyaksa}
       PRATYAKSA_POLL_INTERVAL: ${PRATYAKSA_POLL_INTERVAL:-5}
       ML_SYNC_INTERVAL: ${ML_SYNC_INTERVAL:-60}
@@ -128,6 +129,8 @@ services:
       dockerfile: Dockerfile
       args:
         PUBLIC_API_BASE: /api/v1
+        PUBLIC_ML_TARGET_URL: ${ML_TARGET_URL:-http://192.168.101.3:6000}
+        PUBLIC_CUSTOM_TARGET_URL: ${CUSTOM_TARGET_URL:-http://192.168.101.3:7000}
     container_name: py-pratyaksa-frontend
     profiles: ["full"]
     restart: unless-stopped
