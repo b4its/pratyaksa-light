@@ -16,6 +16,18 @@ export function authHeaders(): Record<string, string> {
 	return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * Global hook invoked when the API rejects an authenticated request with 401
+ * (expired/invalid token). Registered once by the auth store, which clears the
+ * session and redirects to the login page. Decoupled here to avoid a circular
+ * import between `api` and the auth store.
+ */
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+	unauthorizedHandler = handler;
+}
+
 async function request<T = any>(
 	path: string,
 	opts: { method?: string; body?: any; auth?: boolean; headers?: Record<string, string> } = {}
@@ -41,6 +53,12 @@ async function request<T = any>(
 		}
 	}
 	if (!res.ok) {
+		// Expired/invalid token on an authenticated request: hand off to the
+		// global handler so the user is logged out and redirected to login
+		// instead of being shown an empty, misleading page.
+		if (res.status === 401 && auth && unauthorizedHandler) {
+			unauthorizedHandler();
+		}
 		const message = data?.message || data?.detail || `HTTP ${res.status}`;
 		throw new Error(message);
 	}

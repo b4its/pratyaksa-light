@@ -1,5 +1,5 @@
 /** Auth store — mirrors Nuxt `useAuth`. */
-import { api } from '$lib/api';
+import { api, setUnauthorizedHandler } from '$lib/api';
 
 export interface AuthUser {
 	id: string;
@@ -28,6 +28,15 @@ class AuthStore {
 			} catch {
 				this.clear();
 			}
+		}
+	}
+
+	handleUnauthorized() {
+		this.clear();
+		if (typeof window === 'undefined') return;
+		// Avoid redirect loops if we're already on the login page.
+		if (!window.location.pathname.startsWith('/account/login')) {
+			window.location.assign('/account/login');
 		}
 	}
 
@@ -64,3 +73,7 @@ class AuthStore {
 }
 
 export const auth = new AuthStore();
+
+// Register the global 401 handler as soon as this module is imported (before
+// any page's onMount fires), so an expired token is handled reliably.
+setUnauthorizedHandler(() => auth.handleUnauthorized());
