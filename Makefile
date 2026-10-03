@@ -26,14 +26,17 @@ ENV_FILE     := .env
 ENV_EXAMPLE  := .env.example
 
 # --- Ports (override via env: `make up APP_PORT=8080`) ----------------------
-APP_PORT            ?= 80
-BACKEND_PORT        ?= 8080
-FRONTEND_PORT       ?= 3000
-POSTGRES_PORT       ?= 5432
-MONGO_PORT          ?= 27017
-MONGO_EXPRESS_PORT  ?= 8081
-PGADMIN_PORT        ?= 5050
-GRPC_PORT           ?= 50051
+# Host-exposed ports. Shifted +34 from the "default" range to avoid clashing
+# with other stacks on this machine (e.g. another pratyaksa stack already binds
+# 5432/27017). Container-internal ports are NOT affected.
+APP_PORT            ?= 114
+BACKEND_PORT        ?= 8114
+FRONTEND_PORT       ?= 3034
+POSTGRES_PORT       ?= 5466
+MONGO_PORT          ?= 27051
+MONGO_EXPRESS_PORT  ?= 8115
+PGADMIN_PORT        ?= 5084
+GRPC_PORT           ?= 50085
 
 # --- Service / container names ---------------------------------------------
 BACKEND_SVC    := backend

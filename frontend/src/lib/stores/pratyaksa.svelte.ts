@@ -1,7 +1,7 @@
 /** Pratyaksa store — mirrors Nuxt `usePratyaksa` (live/simulasi fleet polling). */
 import { env } from '$env/dynamic/public';
 
-const baseURL = env.PUBLIC_API_BASE || 'http://localhost:8080/api/v1';
+const baseURL = env.PUBLIC_API_BASE || 'http://localhost:8114/api/v1';
 
 export type BackendMode = 'live' | 'simulasi';
 export type SourceMode = 'live-silent' | 'live-telegram' | 'hit-endpoint-sendiri' | 'hit-endpoint-ml';

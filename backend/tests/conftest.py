@@ -13,8 +13,8 @@ import os
 import pytest
 import pytest_asyncio
 
-os.environ.setdefault("DATABASE_URL", "postgresql://pratyaksa:pratyaksa_secret@localhost:5432/pratyaksa_db")
-os.environ.setdefault("MONGODB_URL", "mongodb://pratyaksa:pratyaksa_secret@localhost:27017")
+os.environ.setdefault("DATABASE_URL", "postgresql://pratyaksa:pratyaksa_secret@localhost:5466/pratyaksa_db")
+os.environ.setdefault("MONGODB_URL", "mongodb://pratyaksa:pratyaksa_secret@localhost:27051")
 os.environ.setdefault("MONGODB_NAME", "pratyaksa")
 os.environ.setdefault("JWT_SECRET", "test_secret")
 os.environ.setdefault("MONGO_REQUIRED", "false")

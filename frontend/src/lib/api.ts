@@ -1,10 +1,10 @@
 /**
  * API layer — mirrors the Nuxt `useApi` composable.
- * Base URL from PUBLIC_API_BASE (default http://localhost:8080/api/v1).
+ * Base URL from PUBLIC_API_BASE (default http://localhost:8114/api/v1).
  */
 import { env } from '$env/dynamic/public';
 
-const baseURL = env.PUBLIC_API_BASE || 'http://localhost:8080/api/v1';
+const baseURL = env.PUBLIC_API_BASE || 'http://localhost:8114/api/v1';
 
 function getToken(): string | null {
 	if (typeof localStorage === 'undefined') return null;

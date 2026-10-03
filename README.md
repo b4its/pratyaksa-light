@@ -51,7 +51,7 @@ Sistem AIoT Predictive dan Prescriptive Maintenance untuk Armada Alat Berat Tamb
 │  ▼                       ▼            ▼                                 │
 │  ┌─────────────────────┐        ┌────────────────────────┐              │
 │  │  FastAPI Backend    │        │  SvelteKit Frontend    │              │
-│  │  (uvicorn :8080)    │        │  (adapter-node :3000)  │              │
+│  │  (uvicorn :8080)    │        │  (adapter-node :3000)  │              │  ← port internal container
 │  └──────┬──────────────┘        └────────────────────────┘              │
 │         │                                                               │
 │    ┌────┴──────────────────┐                                            │
@@ -198,7 +198,7 @@ tersedia di bawah `/api/v1/svc/*` agar konsisten dengan base URL frontend.
 | POST | `/svc/upload-model` | – | Upload model 3D (.glb/.gltf) — juga di `/api/v1/svc/upload-model` |
 | POST | `/svc/send-alert` | – | Kirim alert ke bot Telegram (gRPC) — juga di `/api/v1/svc/send-alert` |
 
-Dokumentasi interaktif: `http://localhost:8080/docs`.
+Dokumentasi interaktif: `http://localhost:8114/docs`.
 
 Selengkapnya: lihat [`API_TESTING.md`](./API_TESTING.md) dan folder
 [`catatan/`](./catatan/README.md).
@@ -237,7 +237,7 @@ Set `TELEGRAM_BOT_TOKEN` (dan opsional `TELEGRAM_CHAT_ID`).
 cp .env.example .env
 # edit .env sesuai kebutuhan (opsional)
 docker compose --profile full up -d --build
-# akses: http://localhost
+# akses: http://localhost:114  (APP_PORT)
 ```
 
 Login default: **admin@pratyaksa.id / admin123**.
@@ -249,9 +249,9 @@ Login default: **admin@pratyaksa.id / admin123**.
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-export DATABASE_URL="postgresql://pratyaksa:pratyaksa_secret@localhost:5432/pratyaksa_db"
-export MONGODB_URL="mongodb://pratyaksa:pratyaksa_secret@localhost:27017"
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
+export DATABASE_URL="postgresql://pratyaksa:pratyaksa_secret@localhost:5466/pratyaksa_db"
+export MONGODB_URL="mongodb://pratyaksa:pratyaksa_secret@localhost:27051"
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8114
 ```
 
 **Frontend:**
@@ -259,8 +259,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 cd frontend
 corepack enable
 pnpm install
-echo "PUBLIC_API_BASE=http://localhost:8080/api/v1" > .env
-pnpm dev     # http://localhost:3000
+echo "PUBLIC_API_BASE=http://localhost:8114/api/v1" > .env
+pnpm dev     # http://localhost:3034
 ```
 
 ---
@@ -297,7 +297,7 @@ Lihat `.env.example`. Ringkasan variabel penting:
 | `PRATYAKSA_POLL_INTERVAL` | `5` | Interval polling (detik) |
 | `ML_POSTGRES_URL` | — | PostgreSQL `ml-pratyaksa` untuk sync |
 | `ML_SYNC_INTERVAL` | `60` | Interval sync ML (detik) |
-| `PUBLIC_API_BASE` | `http://localhost:8080/api/v1` | Base URL API untuk frontend |
+| `PUBLIC_API_BASE` | `http://localhost:8114/api/v1` | Base URL API untuk frontend |
 | `CORS_ORIGINS` | `*` | Origin CORS diizinkan (comma-separated) |
 
 ---

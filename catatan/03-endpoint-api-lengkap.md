@@ -70,4 +70,4 @@ Base URL: `/api/v1` (kecuali `/svc/*`). Endpoint bertanda ✔ butuh JWT
 | POST | `/svc/upload-model` | – | Upload model 3D (.glb/.gltf) |
 | POST | `/svc/send-alert` | – | Kirim alert ke bot Telegram (gRPC) |
 
-Swagger UI: `http://localhost:8080/docs`.
+Swagger UI: `http://localhost:8114/docs`.

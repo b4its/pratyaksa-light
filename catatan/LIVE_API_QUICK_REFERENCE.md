@@ -3,7 +3,7 @@
 ## Endpoint Inti
 
 ```bash
-BACKEND=http://localhost:8080
+BACKEND=http://localhost:8114
 
 # Status & mode
 curl -s $BACKEND/api/v1/pratyaksa/status | jq '.data'

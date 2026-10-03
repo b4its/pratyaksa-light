@@ -1,10 +1,10 @@
 # API Testing — Pratyaksa Backend (FastAPI)
 
 Panduan lengkap menguji endpoint API backend **FastAPI** menggunakan `curl`.
-Semua request lewat Nginx di `http://localhost/api/v1` (atau langsung
-`http://localhost:8080/api/v1` saat menjalankan backend manual).
+Semua request lewat Nginx di `http://localhost:114/api/v1` (atau langsung
+`http://localhost:8114/api/v1` saat menjalankan backend manual).
 
-> Dokumentasi interaktif tersedia di `http://localhost:8080/docs` (Swagger UI).
+> Dokumentasi interaktif tersedia di `http://localhost:8114/docs` (Swagger UI).
 
 ---
 
@@ -30,7 +30,7 @@ Semua endpoint kecuali `/health`, `/fleet-summary`, dan seluruh grup
 ### Login
 
 ```bash
-curl -s -X POST http://localhost/api/v1/auth/login \
+curl -s -X POST http://localhost:114/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@pratyaksa.id","password":"admin123"}' > login.json
 ```
@@ -62,7 +62,7 @@ Pakai token di setiap request berikutnya:
 ### Register user baru
 
 ```bash
-curl -s -X POST http://localhost/api/v1/auth/register \
+curl -s -X POST http://localhost:114/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"name":"Engineer","email":"engineer@pratyaksa.id","password":"secret123"}'
 ```
@@ -70,7 +70,7 @@ curl -s -X POST http://localhost/api/v1/auth/register \
 ### Info user saat ini
 
 ```bash
-curl -s http://localhost/api/v1/auth/me \
+curl -s http://localhost:114/api/v1/auth/me \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)"
 ```
 
@@ -97,7 +97,7 @@ cat > analisa.json <<'EOF'
 }
 EOF
 
-curl -s -X POST http://localhost/api/v1/analisa \
+curl -s -X POST http://localhost:114/api/v1/analisa \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" \
   -d @analisa.json | jq '.'
@@ -115,25 +115,25 @@ curl -s -X POST http://localhost/api/v1/analisa \
 
 ```bash
 # List semua laporan (dengan filter)
-curl -s "http://localhost/api/v1/analisa?severity=HIGH" \
+curl -s "http://localhost:114/api/v1/analisa?severity=HIGH" \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" | jq '.'
 
 # Filter per unit / status
-curl -s "http://localhost/api/v1/analisa?unit_tambang_id=<UUID>&status_analisa=OPEN" \
+curl -s "http://localhost:114/api/v1/analisa?unit_tambang_id=<UUID>&status_analisa=OPEN" \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" | jq '.'
 
 # Get by ID (Mongo ObjectId string)
-curl -s http://localhost/api/v1/analisa/<OBJECT_ID> \
+curl -s http://localhost:114/api/v1/analisa/<OBJECT_ID> \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" | jq '.'
 
 # Update status
-curl -s -X PUT http://localhost/api/v1/analisa/<OBJECT_ID> \
+curl -s -X PUT http://localhost:114/api/v1/analisa/<OBJECT_ID> \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" \
   -d '{"status_analisa":"RESOLVED"}' | jq '.'
 
 # Hapus
-curl -s -X DELETE http://localhost/api/v1/analisa/<OBJECT_ID> \
+curl -s -X DELETE http://localhost:114/api/v1/analisa/<OBJECT_ID> \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" | jq '.'
 ```
 
@@ -145,11 +145,11 @@ curl -s -X DELETE http://localhost/api/v1/analisa/<OBJECT_ID> \
 
 ```bash
 # Overview seluruh armada
-curl -s http://localhost/api/v1/analisa/overview \
+curl -s http://localhost:114/api/v1/analisa/overview \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" | jq '.data'
 
 # Detail satu unit (ganti {id} dengan UUID unit dari /unit-tambang)
-curl -s http://localhost/api/v1/analisa/unit/<UUID> \
+curl -s http://localhost:114/api/v1/analisa/unit/<UUID> \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" | jq '.data'
 ```
 
@@ -159,11 +159,11 @@ curl -s http://localhost/api/v1/analisa/unit/<UUID> \
 
 ```bash
 # List unit
-curl -s "http://localhost/api/v1/unit-tambang?per_page=5" \
+curl -s "http://localhost:114/api/v1/unit-tambang?per_page=5" \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" | jq '.data.data'
 
 # Jenis alat berat
-curl -s http://localhost/api/v1/jenis-alat-berat \
+curl -s http://localhost:114/api/v1/jenis-alat-berat \
   -H "Authorization: Bearer $(jq -r '.data.token' login.json)" | jq '.data.data'
 ```
 
@@ -172,12 +172,12 @@ curl -s http://localhost/api/v1/jenis-alat-berat \
 ## 6. PRATYAKSA ML / Mode (tanpa auth)
 
 ```bash
-curl -s http://localhost/api/v1/pratyaksa/status | jq '.data'
-curl -s http://localhost/api/v1/pratyaksa/fleet | jq '.data.total'
-curl -s http://localhost/api/v1/pratyaksa/fleet/health | jq '.data'
-curl -s -X POST http://localhost/api/v1/pratyaksa/mode \
+curl -s http://localhost:114/api/v1/pratyaksa/status | jq '.data'
+curl -s http://localhost:114/api/v1/pratyaksa/fleet | jq '.data.total'
+curl -s http://localhost:114/api/v1/pratyaksa/fleet/health | jq '.data'
+curl -s -X POST http://localhost:114/api/v1/pratyaksa/mode \
   -H "Content-Type: application/json" -d '{"mode":"simulasi"}' | jq '.'
-curl -s http://localhost/api/v1/pratyaksa/features | jq '.data.total'
+curl -s http://localhost:114/api/v1/pratyaksa/features | jq '.data.total'
 ```
 
 ---
@@ -185,10 +185,10 @@ curl -s http://localhost/api/v1/pratyaksa/features | jq '.data.total'
 ## 7. Health Check (tanpa auth)
 
 ```bash
-curl -s http://localhost/api/v1/health | jq '.'
+curl -s http://localhost:114/api/v1/health | jq '.'
 # → {"status":"ok","service":"Pratyaksa Backend","version":"0.2.0"}
 
-curl -s http://localhost/api/v1/fleet-summary | jq '.data'
+curl -s http://localhost:114/api/v1/fleet-summary | jq '.data'
 ```
 
 ---
