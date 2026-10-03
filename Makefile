@@ -10,7 +10,11 @@
 
 # --- Shell & flags ----------------------------------------------------------
 # Fail fast: any failing command (incl. in a pipeline) aborts the recipe.
-SHELL := /bin/bash -eu -o pipefail
+# NOTE: make execs $(SHELL) directly (no shell to split args), so flags MUST go
+# in .SHELLFLAGS — not appended to SHELL, or make fails with
+# "/bin/bash -eu -o pipefail: No such file or directory".
+SHELL := /bin/bash
+.SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 .ONESHELL:
 
