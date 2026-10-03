@@ -1,7 +1,7 @@
 /** Pratyaksa store — mirrors Nuxt `usePratyaksa` (live/simulasi fleet polling). */
 import { env } from '$env/dynamic/public';
 
-const baseURL = env.PUBLIC_API_BASE || 'http://localhost:8114/api/v1';
+const baseURL = env.PUBLIC_API_BASE || 'http://localhost:8116/api/v1';
 
 /** GET + parse JSON, throwing a readable error on HTTP/parse failure. */
 async function getJson(path: string): Promise<any> {

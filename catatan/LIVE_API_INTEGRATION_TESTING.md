@@ -18,7 +18,7 @@ curl -s http://192.168.101.3:6000/health | jq '.'
 ## 2. Cek status backend
 
 ```bash
-curl -s http://localhost:8114/api/v1/pratyaksa/status | jq '.data'
+curl -s http://localhost:8116/api/v1/pratyaksa/status | jq '.data'
 ```
 
 Contoh (mode simulasi karena ML API tidak reachable):
@@ -37,15 +37,15 @@ Contoh (mode simulasi karena ML API tidak reachable):
 ## 3. Data fleet (live atau simulasi)
 
 ```bash
-curl -s http://localhost:8114/api/v1/pratyaksa/fleet | jq '.data.total'
-curl -s http://localhost:8114/api/v1/pratyaksa/fleet/health | jq '.data'
+curl -s http://localhost:8116/api/v1/pratyaksa/fleet | jq '.data.total'
+curl -s http://localhost:8116/api/v1/pratyaksa/fleet/health | jq '.data'
 ```
 
 ## 4. Detail unit
 
 ```bash
 for id in WA600-001 HD785-001 DT-001; do
-  curl -s "http://localhost:8114/api/v1/pratyaksa/result/$id" | jq '.data.risk_level'
+  curl -s "http://localhost:8116/api/v1/pratyaksa/result/$id" | jq '.data.risk_level'
 done
 ```
 
@@ -53,15 +53,15 @@ done
 
 ```bash
 # ke LIVE
-curl -s -X POST http://localhost:8114/api/v1/pratyaksa/mode \
+curl -s -X POST http://localhost:8116/api/v1/pratyaksa/mode \
   -H "Content-Type: application/json" -d '{"mode":"live"}' | jq '.data'
 
 # ke SIMULASI
-curl -s -X POST http://localhost:8114/api/v1/pratyaksa/mode \
+curl -s -X POST http://localhost:8116/api/v1/pratyaksa/mode \
   -H "Content-Type: application/json" -d '{"mode":"simulasi"}' | jq '.data'
 
 # reset ke AUTO
-curl -s -X POST http://localhost:8114/api/v1/pratyaksa/mode \
+curl -s -X POST http://localhost:8116/api/v1/pratyaksa/mode \
   -H "Content-Type: application/json" -d '{"reset":true}' | jq '.data'
 ```
 
@@ -70,8 +70,8 @@ curl -s -X POST http://localhost:8114/api/v1/pratyaksa/mode \
 Aktifkan mode LIVE, tunggu beberapa detik, lalu:
 
 ```bash
-curl -s http://localhost:8114/api/v1/live/stats | jq '.data'
-curl -s http://localhost:8114/api/v1/live/predictions?limit=5 | jq '.total'
+curl -s http://localhost:8116/api/v1/live/stats | jq '.data'
+curl -s http://localhost:8116/api/v1/live/predictions?limit=5 | jq '.total'
 ```
 
 ## 7. Skrip otomatis

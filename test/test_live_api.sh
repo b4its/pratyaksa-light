@@ -6,7 +6,7 @@
 
 set -e
 
-BACKEND_URL="${BACKEND_URL:-http://localhost:8114}"
+BACKEND_URL="${BACKEND_URL:-http://localhost:8116}"
 LIVE_API_URL="${LIVE_API_URL:-http://192.168.101.3:6000}"
 
 echo "=========================================="
