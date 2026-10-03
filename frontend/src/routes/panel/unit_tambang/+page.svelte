@@ -156,7 +156,7 @@
 			jenis_alat_berat_id: jenisOptions[0]?.id || '',
 			status: 'SEHAT',
 			health: 100,
-			maintenance: '',
+			maintenance: '30 Hari Lagi',
 			savings: 0,
 			lat: -0.5032,
 			lng: 117.1536,
@@ -196,8 +196,16 @@
 			formError = 'Kode unit wajib diisi.';
 			return;
 		}
+		if (formData.code.trim().length < 2) {
+			formError = 'Kode unit minimal 2 karakter.';
+			return;
+		}
 		if (!formData.jenis_alat_berat_id) {
 			formError = 'Jenis alat berat wajib dipilih.';
+			return;
+		}
+		if (!formData.maintenance?.trim()) {
+			formError = 'Jadwal maintenance wajib diisi.';
 			return;
 		}
 		formLoading = true;
@@ -525,7 +533,7 @@
 					</div>
 				</div>
 				<div>
-					<label class="label" for="f-mtc">Jadwal Maintenance</label>
+					<label class="label" for="f-mtc">Jadwal Maintenance <span class="text-critical">*</span></label>
 					<input id="f-mtc" bind:value={formData.maintenance} type="text" placeholder="Cth: 50 Jam Lagi" class="field" />
 				</div>
 				<div>

@@ -43,6 +43,53 @@ async def test_login_wrong_password(client):
 
 
 @pytest.mark.asyncio
+async def test_validation_messages_are_friendly(client):
+    """Validation failures return a friendly Indonesian message, not raw
+    Pydantic English (e.g. 'String should have at least 6 characters')."""
+    # register: password too short
+    resp = await client.post(
+        "/api/v1/auth/register",
+        json={"name": "Ok Name", "email": "friend1@example.com", "password": "123"},
+    )
+    assert resp.status_code == 400, resp.text
+    msg = resp.json()["message"]
+    assert "English" not in msg and "String should" not in msg
+    assert "Kata sandi" in msg and "6" in msg
+
+    # register: missing email
+    resp2 = await client.post(
+        "/api/v1/auth/register", json={"name": "Ok Name", "password": "secret123"}
+    )
+    assert resp2.status_code == 400
+    assert "Email wajib diisi" in resp2.json()["message"]
+
+    # unit-tambang: missing maintenance -> friendly, field-aware
+    _, _, headers = await _register(client)
+    jenis = await client.post(
+        "/api/v1/jenis-alat-berat",
+        json={"nama": f"Val Type {uuid.uuid4().hex[:6]}"},
+        headers=headers,
+    )
+    jenis_id = jenis.json()["data"]["id"]
+    bad = await client.post(
+        "/api/v1/unit-tambang",
+        json={
+            "code": f"UT-{uuid.uuid4().hex[:6]}",
+            "jenis_alat_berat_id": jenis_id,
+            "status": "SEHAT",
+            "health": 90,
+            "maintenance": "",  # min_length=1 violated
+            "savings": 0,
+        },
+        headers=headers,
+    )
+    assert bad.status_code == 400, bad.text
+    bmsg = bad.json()["message"]
+    assert "String should" not in bmsg
+    assert "maintenance" in bmsg.lower() or "Jadwal" in bmsg
+
+
+@pytest.mark.asyncio
 async def test_jenis_alat_berat_crud(client):
     _, _, headers = await _register(client)
     nama = f"Excavator Test {uuid.uuid4().hex[:6]}"

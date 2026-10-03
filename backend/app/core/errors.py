@@ -120,18 +120,80 @@ async def integrity_exception_handler(_request: Request, exc: Exception) -> JSON
     )
 
 
+_FIELD_LABELS = {
+    "name": "Nama",
+    "email": "Email",
+    "password": "Kata sandi",
+    "confirm_password": "Konfirmasi kata sandi",
+    "code": "Kode unit",
+    "nama": "Nama jenis",
+    "deskripsi": "Deskripsi",
+    "jenis_alat_berat_id": "Jenis alat berat",
+    "status": "Status",
+    "health": "Health",
+    "maintenance": "Jadwal maintenance",
+    "savings": "Savings",
+    "lat": "Latitude",
+    "lng": "Longitude",
+    "unit_id": "Unit",
+    "severity": "Severity",
+    "asset_code": "Kode unit",
+    "status_unit": "Status unit",
+}
+
+
+def _field_label(loc: tuple) -> str:
+    if not loc:
+        return "Nilai"
+    key = str(loc[-1])
+    return _FIELD_LABELS.get(key, key.replace("_", " ").capitalize())
+
+
+def _friendly_message(err: dict, label: str) -> str:
+    """Turn a single Pydantic error into an Indonesian, field-aware message."""
+    etype = err.get("type", "")
+    ctx = err.get("ctx") or {}
+    if etype == "missing":
+        return f"{label} wajib diisi."
+    if etype in ("string_too_short",):
+        minimum = ctx.get("min_length", err.get("min_length"))
+        return f"{label} minimal {minimum} karakter."
+    if etype in ("string_too_long",):
+        maximum = ctx.get("max_length")
+        return f"{label} maksimal {maximum} karakter."
+    if etype in ("value_error",) and "email" in err.get("msg", "").lower():
+        return f"{label} tidak valid."
+    if etype in ("int_parsing", "int_type", "float_parsing", "float_type", "decimal_parsing"):
+        return f"{label} harus berupa angka."
+    if etype in ("greater_than_equal", "less_than_equal", "greater_than", "less_than"):
+        return f"{label} di luar rentang yang diizinkan."
+    if etype in ("enum", "literal_error"):
+        allowed = ctx.get("expected")
+        return f"{label} tidak valid. Pilihan: {allowed}." if allowed else f"{label} tidak valid."
+    if etype in ("value_error",):
+        return f"{label} tidak valid."
+    # Fallback: keep the field label but avoid leaking raw English pydantic text
+    # when we can't translate it.
+    raw = err.get("msg", "tidak valid")
+    return f"{label}: {raw}"
+
+
 def _format_validation_errors(exc: RequestValidationError) -> str:
-    """Render Pydantic validation errors as a single human-readable message.
+    """Render Pydantic validation errors as friendly Indonesian messages.
 
     The Rust backend (via ``validator``) returned HTTP 400 with the message
-    ``{"status":"error","message":"..."}``; we reproduce that envelope here.
+    ``{"status":"error","message":"..."}``; we reproduce that envelope here but
+    translate Pydantic's raw English messages (e.g. ``String should have at
+    least 6 characters``) into user-facing Indonesian.
     """
     parts: list[str] = []
     for err in exc.errors():
-        loc = ".".join(str(p) for p in err.get("loc", ()) if p not in ("body", "query", "path"))
-        msg = err.get("msg", "invalid value")
-        parts.append(f"{loc}: {msg}" if loc else msg)
-    return "; ".join(parts) or "Permintaan tidak valid"
+        loc = tuple(p for p in err.get("loc", ()) if p not in ("body", "query", "path"))
+        parts.append(_friendly_message(err, _field_label(loc)))
+    # De-duplicate while preserving order.
+    seen: set[str] = set()
+    unique = [p for p in parts if not (p in seen or seen.add(p))]
+    return " ".join(unique) or "Permintaan tidak valid."
 
 
 async def validation_exception_handler(

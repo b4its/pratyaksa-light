@@ -14,12 +14,28 @@
 	let errorMessage = $state('');
 
 	const passwordMismatch = $derived(confirmPassword.length > 0 && password !== confirmPassword);
+	const passwordTooShort = $derived(password.length > 0 && password.length < 6);
 
 	onMount(() => auth.init());
 
 	async function handleRegister(e: Event) {
 		e.preventDefault();
-		if (passwordMismatch) return;
+		if (name.trim().length < 2) {
+			errorMessage = 'Nama minimal 2 karakter.';
+			return;
+		}
+		if (!email.includes('@')) {
+			errorMessage = 'Email tidak valid.';
+			return;
+		}
+		if (password.length < 6) {
+			errorMessage = 'Kata sandi minimal 6 karakter.';
+			return;
+		}
+		if (passwordMismatch) {
+			errorMessage = 'Kata sandi tidak cocok.';
+			return;
+		}
 		isLoading = true;
 		errorMessage = '';
 		try {
@@ -70,7 +86,7 @@
 					<div>
 						<label for="password" class="label">Kata Sandi</label>
 						<div class="relative">
-							<input id="password" bind:value={password} type={showPassword ? 'text' : 'password'} placeholder="••••••••" class="field" style="padding-right:3rem;" required />
+							<input id="password" bind:value={password} type={showPassword ? 'text' : 'password'} placeholder="••••••••" class="field {passwordTooShort ? '!border-warning' : ''}" style="padding-right:3rem;" required minlength="6" />
 							<button type="button" onclick={() => (showPassword = !showPassword)} class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-[color:var(--text-muted)] hover:text-amber transition-colors" aria-label="Toggle password visibility">
 								{#if !showPassword}
 									<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
@@ -94,6 +110,13 @@
 						</div>
 					</div>
 				</div>
+
+				{#if passwordTooShort}
+					<div class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-warning/10 border border-warning/40 text-warning">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+						<span class="font-semibold text-xs uppercase tracking-wide">Kata sandi minimal 6 karakter</span>
+					</div>
+				{/if}
 
 				{#if passwordMismatch}
 					<div class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical">

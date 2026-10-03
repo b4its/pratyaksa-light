@@ -86,6 +86,10 @@
 			formError = 'Nama wajib diisi.';
 			return;
 		}
+		if (form.nama.trim().length < 2) {
+			formError = 'Nama minimal 2 karakter.';
+			return;
+		}
 		saving = true;
 		formError = '';
 		try {
