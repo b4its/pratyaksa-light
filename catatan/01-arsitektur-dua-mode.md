@@ -1,25 +1,24 @@
-# Arsitektur 2 Mode (Live / Simulasi)
+# Arsitektur Mode Simulasi
+
+> **Catatan historis penghapusan live API.** Dokumen ini dahulu bernama
+> "Arsitektur 2 Mode (Live / Simulasi)". Seluruh alur LIVE kini dihapus.
 
 ## Konsep
 
-Backend FastAPI memiliki **2 mode operasi** yang otomatis berganti berdasarkan
-ketersediaan server ML API eksternal:
+Pratyaksa berjalan sepenuhnya dalam **mode SIMULASI**: setiap data fleet,
+prediksi, dan hasil analisa dihasilkan oleh engine **simulator deterministik**
+internal (`backend/app/pratyaksa/simulator.py`). Tidak ada koneksi keluar ke
+ML API eksternal maupun ML PostgreSQL.
 
 ```
-┌─────────────────────────────────────────────────┐
-│         Background Polling Loop (asyncio)        │
-│              Setiap 5 detik                      │
-│                                                   │
-│   GET /health → 200 OK?                          │
-│        ├── Ya ──→ Mode = LIVE                    │
-│        │           ├── GET /fleet → data asli     │
-│        │           ├── simpan ke MongoDB (batch)  │
-│        │           └── Proxy ke ML API            │
-│        │                                           │
-│        └── Tidak → Mode = SIMULASI               │
-│                    ├── Generate data deterministik │
-│                    └── Semua endpoint → simulasi   │
-└─────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────┐
+│         Simulator Internal (deterministik)      │
+│     frand(seed) + time_bucket(interval)         │
+│                                                  │
+│   GET /pratyaksa/fleet  → data simulasi          │
+│   GET /pratyaksa/result → prediksi simulasi      │
+│   GET /pratyaksa/...    → semua dari simulator   │
+└───────────────────────────────────────────────┘
 ```
 
 ## SharedPratyaksaState
@@ -29,34 +28,26 @@ menyimpan:
 
 | Field | Tipe | Deskripsi |
 |-------|------|-----------|
-| `mode` | `PratyaksaMode` | `LIVE` atau `SIMULASI` |
-| `manual_mode` | `Optional[PratyaksaMode]` | Kunci mode manual oleh user |
-| `fleet_data` | `list[FleetAsset]` | Data fleet (asli atau simulasi) |
-| `health_status` | `Optional[HealthResponse]` | Health terakhir dari ML API |
+| `mode` | `PratyaksaMode` | Selalu `SIMULASI` |
+| `fleet_data` | `list[FleetAsset]` | Data fleet hasil simulasi |
+| `health_status` | `Optional[HealthResponse]` | Health simulasi |
 | `last_health_check` | `Optional[float]` | Epoch detik health check |
 | `last_fleet_poll` | `Optional[float]` | Epoch detik fleet poll |
-| `api_reachable` | `bool` | Apakah ML API reachable |
 
 Implementasi: `backend/app/pratyaksa/state.py`.
 
-## Alur Mode Switching
+## Yang Dihapus
 
-1. **Startup** → default `SIMULASI` (safe mode); fleet di-seed data simulasi.
-2. **Loop polling** (`backend/app/pratyaksa/polling.py`) → `GET /health`.
-3. **Jika sukses** → `mode = LIVE`, fetch `/fleet`, simpan snapshot + result ke MongoDB.
-4. **Jika gagal** → `mode = SIMULASI`, generate data deterministik.
-5. **Manual mode lock** → jika user memilih mode via `POST /pratyaksa/mode`,
-   polling menghormati pilihan tersebut (tidak menimpa).
+Komponen integrasi live API berikut sudah tidak ada lagi di repo:
 
-## Batch Consumer MongoDB
-
-Meniru desain Rust: producer (`store_prediction`, `store_fleet_snapshot`, dst.)
-menaruh dokumen pada `asyncio.Queue`; task background mem-`insert_many` saat
-batch penuh atau interval tercapai. Lihat `backend/app/db/mongo.py`.
+- `PratyaksaApiClient` (HTTP client ke ML API eksternal).
+- `pratyaksa/polling.py` (loop polling asyncio ke ML API).
+- `pratyaksa/sync.py` (sync ml-pratyaksa PostgreSQL → MongoDB).
+- Route `/live/*` dan skema `schemas/live.py`.
+- Mode switch / auto-detect & field `api_reachable`/`manual_mode`.
 
 ## Keuntungan
 
-- **Zero dependency** — aplikasi tetap jalan meski ML API mati.
-- **Seamless** — frontend tidak perlu tahu mode aktif.
+- **Zero dependency** — aplikasi tidak butuh ML API / jaringan eksternal.
 - **Deterministik** — data simulasi konsisten (berbasis seed dari `asset_id`
   + `time_bucket`; helper `frand` identik dengan implementasi Rust).

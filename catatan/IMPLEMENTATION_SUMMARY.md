@@ -4,18 +4,18 @@
 
 Mengubah seluruh tech stack PRATYAKSA dari **Rust (Actix-Web) + Nuxt 4**
 menjadi **Python (FastAPI) + Svelte (SvelteKit)**, semuanya di folder
-`py-pratyaksa`, dengan tetap mempertahankan kontrak API, skema data, dan
-perilaku mode Live/Simulasi.
+`py-pratyaksa`, dengan tetap mempertahankan kontrak API dan skema data.
+Integrasi *live API* (polling ML eksternal) kemudian dihapus sehingga seluruh
+data berasal dari simulator internal.
 
 ## Yang Dibuat
 
 ### 1. Backend FastAPI (`backend/`)
-- 35 endpoint REST di `/api/v1` + `/svc/*` (paritas penuh dengan Rust).
+- 30+ endpoint REST di `/api/v1` + `/svc/*`.
 - PostgreSQL via `asyncpg` + migration runner SQL idempoten.
 - MongoDB via `pymongo` async dengan **batch consumer** (paritas desain Rust).
 - JWT (python-jose) + bcrypt (hash lama `$2y$` tetap valid).
-- Integrasi PRATYAKSA: shared state, HTTP client ML, simulator deterministik,
-  polling loop, sync ml-pratyaksa PostgreSQL → MongoDB.
+- PRATYAKSA: shared state + **simulator deterministik** (mode simulasi saja).
 - Derivasi health-analytics (telemetry/prediction/operational/unit analysis).
 
 ### 2. Frontend SvelteKit (`frontend/`)
@@ -33,14 +33,14 @@ perilaku mode Live/Simulasi.
 ### 4. Infra & Dokumentasi
 - `docker-compose.yml` (6 service + profile), `.example.docker-compose.yml`.
 - `nginx/nginx.conf`, `Dockerfile` per komponen, `.env.example`, `README.md`.
-- `test/test_live_api.sh`, `API_TESTING.md`, folder `catatan/`.
+- `API_TESTING.md`, folder `catatan/`.
 
 ## Verifikasi
 
 | Komponen | Perintah | Hasil |
 |----------|----------|-------|
-| Backend | `pytest` | 31 passed |
-| Telegram bot | `pytest` | 11 passed |
+| Backend | `pytest` | 41 passed |
+| Telegram bot | `pytest` | 13 passed |
 | Frontend | `svelte-check` | 0 errors / 0 warnings |
 | Frontend | `pnpm build` | sukses (adapter-node) |
 | Compose | `docker compose config` | valid (6 service) |

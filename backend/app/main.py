@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -26,9 +25,9 @@ from app.core.errors import (
 )
 from app.db.mongo import MongoDb
 from app.db.postgres import PostgresDb
-from app.pratyaksa import PratyaksaApiClient, SharedPratyaksaState
-from app.pratyaksa.polling import start_polling
-from app.pratyaksa.sync import start_sync
+from app.pratyaksa import SharedPratyaksaState
+from app.pratyaksa.simulator import generate_fleet
+from app.pratyaksa.state import now_epoch
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,9 +56,7 @@ async def lifespan(app: FastAPI):
     if config.mongodb_url:
         logger.info("📦 Connecting to MongoDB...")
         try:
-            mongo = await MongoDb.connect(
-                config.mongodb_url, config.mongodb_name, config.mongo_batch_size
-            )
+            mongo = await MongoDb.connect(config.mongodb_url, config.mongodb_name)
             mongo.start_consumers()
             app.state.mongo = mongo
             logger.info("✅ MongoDB connected")
@@ -72,45 +69,22 @@ async def lifespan(app: FastAPI):
         logger.warning("⚠️  MONGODB_URL not set — Mongo endpoints will fail")
         app.state.mongo = None
 
-    # --- PRATYAKSA shared state + client ---
+    # --- PRATYAKSA shared state (simulation-only) ---
     app.state.pratyaksa = SharedPratyaksaState()
-    app.state.pratyaksa_client = PratyaksaApiClient(config)
-
-    # --- Background tasks ---
-    tasks: list[asyncio.Task] = []
-    if app.state.mongo is not None:
-        tasks.append(
-            asyncio.create_task(
-                start_polling(
-                    app.state.pratyaksa,
-                    app.state.pratyaksa_client,
-                    config.pratyaksa_poll_interval_secs,
-                    app.state.mongo,
-                )
-            )
-        )
-        tasks.append(
-            asyncio.create_task(
-                start_sync(app.state.pratyaksa, config, app.state.mongo)
-            )
-        )
-        logger.info("🔁 Background polling & sync tasks started")
+    await app.state.pratyaksa.update(
+        fleet_data=generate_fleet(),
+        last_fleet_poll=now_epoch(),
+        last_health_check=now_epoch(),
+    )
+    logger.info("🧪 Pratyaksa running in SIMULATION mode (no external API)")
 
     try:
         yield
     finally:
-        for task in tasks:
-            task.cancel()
-        for task in tasks:
-            try:
-                await task
-            except (asyncio.CancelledError, Exception):
-                pass
         if app.state.mongo is not None:
             await app.state.mongo.close()
         if app.state.pg is not None:
             await app.state.pg.close()
-        await app.state.pratyaksa_client.close()
         logger.info("🛑 Shutdown complete")
 
 

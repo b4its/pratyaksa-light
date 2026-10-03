@@ -13,7 +13,7 @@ Base URL: `/api/v1` (kecuali `/svc/*`). Endpoint bertanda ✔ butuh JWT
 ## Dashboard & Fleet
 | Method | Path | Auth | Deskripsi |
 |--------|------|:----:|-----------|
-| GET | `/dashboard` | ✔ | Statistik dashboard (mode-aware) |
+| GET | `/dashboard` | ✔ | Statistik dashboard (simulasi) |
 | GET | `/fleet-summary` | – | Ringkasan armada (internal) |
 | GET | `/health` | – | Health check service |
 
@@ -41,28 +41,19 @@ Base URL: `/api/v1` (kecuali `/svc/*`). Endpoint bertanda ✔ butuh JWT
 | GET | `/analisa/overview` | ✔ | Overview kesehatan armada |
 | GET | `/analisa/unit/{id}` | ✔ | Analitik detail satu unit |
 
-## PRATYAKSA ML API
+## PRATYAKSA Simulator
 | Method | Path | Auth | Deskripsi |
 |--------|------|:----:|-----------|
-| GET | `/pratyaksa/status` | – | Mode & reachability |
+| GET | `/pratyaksa/status` | – | Mode & fleet (simulasi) |
 | GET | `/pratyaksa/fleet` | – | Data fleet |
 | GET | `/pratyaksa/fleet/health` | – | Ringkasan health fleet |
 | GET | `/pratyaksa/result/{asset_id}` | – | Hasil prediksi per asset |
 | POST | `/pratyaksa/predict` | – | Prediksi (wajib 37 fitur) |
-| POST | `/pratyaksa/workorder` | – | Generate WO dari ML |
+| POST | `/pratyaksa/workorder` | – | Generate WO dari simulator |
 | GET | `/pratyaksa/features` | – | 37 nama fitur sensor |
 | GET | `/pratyaksa/explain/{id}` | – | SHAP explanation |
-| POST | `/pratyaksa/reload-models` | – | Reload model |
-| POST | `/pratyaksa/mode` | – | Ganti mode (live/simulasi/auto) |
-
-## Live (MongoDB)
-| Method | Path | Auth | Deskripsi |
-|--------|------|:----:|-----------|
-| GET | `/live/predictions` | – | Prediksi tersimpan |
-| GET | `/live/predictions/{asset}/latest` | – | Prediksi terbaru |
-| GET | `/live/fleet` | – | Fleet snapshot |
-| GET | `/live/work-orders` | – | Work order live |
-| GET | `/live/stats` | – | Statistik data live |
+| POST | `/pratyaksa/reload-models` | – | Reload model (simulasi) |
+| POST | `/pratyaksa/mode` | – | Mode (selalu `simulasi`) |
 
 ## Service (upload & alert)
 | Method | Path | Auth | Deskripsi |

@@ -73,8 +73,6 @@ services:
       MONGODB_NAME: ${MONGO_DB:-pratyaksa}
       JWT_SECRET: ${JWT_SECRET:-super_secret_pratyaksa_key_change_in_production}
       JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-24}
-      PRATYAKSA_API_URL: ${ML_TARGET_URL:-http://192.168.101.3:6000}
-      PRATYAKSA_API_KEY: ${LIVE_API_KEY:-dev-key-pratyaksa}
       TELEGRAM_GRPC_TARGET: ${TELEGRAM_GRPC_TARGET:-telegram-bot:50051}
       MEDIA_DIR: /app/media/models
     volumes:

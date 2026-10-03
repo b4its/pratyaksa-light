@@ -1,14 +1,12 @@
-"""PRATYAKSA ML integration package."""
+"""PRATYAKSA ML integration package (simulation-only)."""
 
 from app.pratyaksa.state import (
-    PratyaksaApiClient,
     PratyaksaMode,
     PratyaksaState,
     SharedPratyaksaState,
 )
 
 __all__ = [
-    "PratyaksaApiClient",
     "PratyaksaMode",
     "PratyaksaState",
     "SharedPratyaksaState",

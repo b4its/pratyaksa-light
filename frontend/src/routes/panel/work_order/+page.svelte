@@ -3,8 +3,6 @@
 	import { page as pageStore } from '$app/state';
 	import { api } from '$lib/api';
 	import { createMap } from '$lib/fleet-map';
-	import ModeSelector from '$lib/components/ModeSelector.svelte';
-	import ModeLockTabel from '$lib/components/ModeLockTabel.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
@@ -666,12 +664,9 @@
 		<p class="mt-2 text-[color:var(--text-muted)]">Estimasi perbaikan unit CRITICAL, WARNING &amp; RUSAK — dipicu dari alert Telegram.</p>
 	</div>
 	<div class="flex items-center gap-3">
-		<ModeSelector />
 		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span></div>
 	</div>
 </header>
-
-<ModeLockTabel />
 
 {#if error}<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold">⚠️ {error}</div>{/if}
 {#if woToast}

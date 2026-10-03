@@ -1,4 +1,4 @@
-"""Integration tests: live API endpoints (require PostgreSQL/MongoDB)."""
+"""Integration tests: pratyaksa simulator endpoints (require PostgreSQL/MongoDB)."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ async def test_health_endpoint(client):
 async def test_pratyaksa_status_and_fleet(client):
     resp = await client.get("/api/v1/pratyaksa/status")
     assert resp.status_code == 200
-    assert resp.json()["data"]["mode"] in ("live", "simulasi")
+    assert resp.json()["data"]["mode"] == "simulasi"
 
     fleet = await client.get("/api/v1/pratyaksa/fleet")
     assert fleet.status_code == 200
@@ -26,18 +26,14 @@ async def test_pratyaksa_status_and_fleet(client):
 
 
 @pytest.mark.asyncio
-async def test_pratyaksa_mode_switch(client):
-    resp = await client.post("/api/v1/pratyaksa/mode", json={"mode": "simulasi"})
+async def test_pratyaksa_mode_switch_is_simulasi_only(client):
+    resp = await client.post("/api/v1/pratyaksa/mode", json={"mode": "live"})
     assert resp.status_code == 200
     assert resp.json()["data"]["mode"] == "simulasi"
-
-    reset = await client.post("/api/v1/pratyaksa/mode", json={"reset": True})
-    assert reset.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_pratyaksa_predict_requires_37_features(client):
-    await client.post("/api/v1/pratyaksa/mode", json={"mode": "simulasi"})
     bad = await client.post(
         "/api/v1/pratyaksa/predict",
         json={
@@ -60,11 +56,11 @@ async def test_pratyaksa_predict_requires_37_features(client):
         },
     )
     assert good.status_code == 200
+    assert good.json()["mode"] == "simulasi"
 
 
 @pytest.mark.asyncio
 async def test_features_endpoint(client):
-    await client.post("/api/v1/pratyaksa/mode", json={"mode": "simulasi"})
     resp = await client.get("/api/v1/pratyaksa/features")
     assert resp.status_code == 200
     assert resp.json()["data"]["total"] == 37

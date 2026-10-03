@@ -96,7 +96,7 @@ async def _handle_command(state: BotState, chat_id: int, cmd: str, text: str) ->
             try:
                 reply = await state.fetch_pratyaksa_status()
             except Exception as exc:
-                reply = f"⚠️ Gagal mengambil status DS API: {exc}.\nCoba lagi sebentar."
+                reply = f"⚠️ Gagal mengambil status Pratyaksa: {exc}.\nCoba lagi sebentar."
             await state.send_message(chat_id, reply)
         elif cmd == "/unit":
             await state.add_subscriber(chat_id)

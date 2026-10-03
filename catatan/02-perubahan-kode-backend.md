@@ -4,7 +4,7 @@
 
 ```
 backend/app/
-├── main.py                 # App factory + lifespan (DB, polling, sync)
+├── main.py                 # App factory + lifespan (PostgreSQL, MongoDB)
 ├── core/
 │   ├── config.py           # AppConfig (paritas config.rs)
 │   ├── errors.py           # AppError + error envelope
@@ -18,12 +18,12 @@ backend/app/
 │   ├── health_analytics.py # Derivasi telemetry/prediction/operational/RUL/SHAP
 │   └── telegram.py         # gRPC client ke telegram_bot_grpc
 ├── pratyaksa/
-│   ├── state.py            # SharedPratyaksaState + PratyaksaApiClient
-│   ├── simulator.py        # Generator deterministik (frand/time_bucket)
-│   ├── polling.py          # Loop polling ML API
-│   └── sync.py             # Sync ml-pratyaksa PostgreSQL → MongoDB
-└── api/routes/             # auth, dashboard, CRUD, analisa, pratyaksa, live, svc
+│   ├── state.py            # SharedPratyaksaState (simulasi)
+│   └── simulator.py        # Generator deterministik (frand/time_bucket)
+└── api/routes/             # auth, dashboard, CRUD, analisa, pratyaksa, svc
 ```
+
+> Integrasi live API (HTTP client ML, polling, sync) telah dihapus.
 
 ## Pemetaan dari Rust
 
@@ -37,7 +37,6 @@ backend/app/
 | `bcrypt` crate | `bcrypt` (Python) — hash `$2y$` lama tetap valid |
 | `tonic` gRPC bot | `grpcio` + `grpcio-tools` bot Python |
 | `sqlx::migrate!` | Migration runner SQL idempoten (`PostgresDb.run_migrations`) |
-| `tokio::spawn(start_polling)` | `asyncio.create_task(start_polling)` |
 
 ## Error Handling
 

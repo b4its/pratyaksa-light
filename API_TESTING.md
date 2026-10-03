@@ -25,7 +25,7 @@ Semua service (`backend`, `frontend`, `telegram-bot`, `nginx`, `postgres`,
 ## 1. Autentikasi
 
 Semua endpoint kecuali `/health`, `/fleet-summary`, dan seluruh grup
-`/pratyaksa/*` & `/live/*` memerlukan JWT token. Token berlaku **24 jam**.
+`/pratyaksa/*` memerlukan JWT token. Token berlaku **24 jam**.
 
 ### Login
 
@@ -169,7 +169,7 @@ curl -s http://localhost:116/api/v1/jenis-alat-berat \
 
 ---
 
-## 6. PRATYAKSA ML / Mode (tanpa auth)
+## 6. PRATYAKSA Simulator (tanpa auth)
 
 ```bash
 curl -s http://localhost:116/api/v1/pratyaksa/status | jq '.data'
@@ -179,6 +179,9 @@ curl -s -X POST http://localhost:116/api/v1/pratyaksa/mode \
   -H "Content-Type: application/json" -d '{"mode":"simulasi"}' | jq '.'
 curl -s http://localhost:116/api/v1/pratyaksa/features | jq '.data.total'
 ```
+
+> Pratyaksa berjalan hanya dalam mode simulasi; endpoint `/pratyaksa/mode`
+> selalu mengembalikan `mode: "simulasi"`.
 
 ---
 
@@ -198,8 +201,5 @@ curl -s http://localhost:116/api/v1/fleet-summary | jq '.data'
 | Gejala | Penyebab | Solusi |
 |--------|----------|--------|
 | `401 Unauthorized` | Token tidak ada/kadaluarsa | Login ulang, cek header `Authorization` |
-| `502 Bad Gateway` (mode live) | ML API eksternal down | Ganti ke mode `simulasi` |
 | `409 Conflict` | Duplikat nama/kode unit | Gunakan nama/kode unik |
 | Koneksi DB gagal | Container `postgres`/`mongodb` belum siap | `docker compose ps` lalu tunggu healthy |
-
-Untuk pengujian Live API eksternal, jalankan `./test/test_live_api.sh`.

@@ -4,23 +4,25 @@
 
 ### Backend FastAPI (`backend/tests`, pytest)
 
-`31 passed` — unit + integrasi terhadap PostgreSQL/MongoDB aktif.
+`41 passed` — unit + integrasi terhadap PostgreSQL/MongoDB aktif.
 
 | Kelompok | Jumlah | Cakupan |
 |----------|:------:|---------|
 | `test_security.py` | 5 | bcrypt roundtrip, verifikasi hash `$2y$` seed, JWT roundtrip/invalid |
 | `test_simulator.py` | 6 | fleet/result/predict/features/workorder/explain deterministik |
 | `test_health_analytics.py` | 6 | classify, risk band, telemetry/prediction/analysis derivation |
-| `test_api_pratyaksa.py` | 6 | health, status/fleet, mode switch, validasi 37 fitur, proteksi auth |
+| `test_api_pratyaksa.py` | 6 | health, status/fleet, mode (selalu simulasi), validasi 37 fitur, proteksi auth |
+| `test_api_svc.py` | 7 | upload model, envelope validasi, proteksi auth rute Mongo |
 | `test_api_crud.py` | 8 | auth, jenis/unit CRUD, telemetry, work-order lifecycle, analisa Mongo, dashboard, health overview |
+| dll. | … | derivasi & endpoint lain |
 
 ### Telegram Bot (`telegram_bot_grpc/tests`, pytest)
 
-`11 passed` — builder pesan + gRPC AlertService (state stub, tanpa jaringan).
+`13 passed` — builder pesan + gRPC AlertService (state stub, tanpa jaringan).
 
 | Kelompok | Jumlah | Cakupan |
 |----------|:------:|---------|
-| `test_messages.py` | 8 | esc/normalize_base, alert, fleet summary, status, unit detail, report, keyboard |
+| `test_messages.py` | 9 | esc/normalize_base, alert, fleet summary, status, unit detail, report, keyboard |
 | `test_grpc_service.py` | 3 | SendAlert sukses, tanpa subscriber, HealthCheck hitung |
 
 Uji asap server gRPC (`HealthCheck` lewat channel nyata) → **OK**.
@@ -34,10 +36,10 @@ Uji asap server gRPC (`HealthCheck` lewat channel nyata) → **OK**.
 
 ### Mode Simulasi
 
-Server ML API tidak aktif → otomatis mode `simulasi`:
+Pratyaksa selalu mode `simulasi`:
 
 ```json
-{ "mode": "simulasi", "api_reachable": false, "fleet_count": 6 }
+{ "mode": "simulasi", "fleet_count": 6 }
 ```
 
 ### Validasi 37 Fitur
@@ -60,8 +62,8 @@ error range.
 
 | Komponen | Check | Build |
 |----------|-------|-------|
-| `backend` (FastAPI) | ✅ pytest 31 passed | ✅ Dockerfile OK |
-| `telegram_bot_grpc` (Python) | ✅ pytest 11 passed | ✅ Dockerfile OK |
+| `backend` (FastAPI) | ✅ pytest 41 passed | ✅ Dockerfile OK |
+| `telegram_bot_grpc` (Python) | ✅ pytest 13 passed | ✅ Dockerfile OK |
 | `frontend` (SvelteKit) | ✅ svelte-check 0/0 | ✅ adapter-node OK |
 
 ## Cara Menjalankan Pengujian
@@ -75,7 +77,4 @@ cd telegram_bot_grpc && .venv/bin/python -m pytest -q
 
 # Frontend
 cd frontend && pnpm check && pnpm build
-
-# Integrasi Live API (butuh stack berjalan)
-./test/test_live_api.sh
 ```

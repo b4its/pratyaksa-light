@@ -8,7 +8,7 @@ User → Telegram Bot (long-polling getUpdates, Python)
          ├── /start     → Register subscriber + greeting + inline menu
          ├── /status    → GET /api/v1/fleet-summary (PostgreSQL)
          ├── /detail    → Fleet + analisa lengkap
-         ├── /pratyaksa → GET /api/v1/pratyaksa/status (mode DS API) (alias /ds)
+         ├── /pratyaksa → GET /api/v1/pratyaksa/status (mode simulasi) (alias /ds)
          ├── /unit <id> → GET /api/v1/pratyaksa/result/{asset_id} (RUL + Digital Twin + Last processed)
          ├── /menu      → Tampilkan menu inline
          └── /down      → Berhenti berlangganan (alias /berhenti, /stop)
@@ -50,10 +50,9 @@ telegram_bot_grpc/
 ## Contoh Output `/pratyaksa`
 
 ```
-🤖 PRATYAKSA DS API Status
+🤖 PRATYAKSA Status
 
 🟡 Mode       : simulasi
-❌ Reachable : false
 📦 Fleet Count : 6 unit
 🩺 Health Check : 2s ago
 📡 Fleet Poll   : 2s ago
@@ -61,8 +60,8 @@ telegram_bot_grpc/
 
 ## Alur Sinkronisasi
 
-1. **Backend** polling ML API tiap 5 detik (`/health` → `/fleet`).
-2. **SharedPratyaksaState** menyimpan mode + data fleet.
+1. **Backend** menyediakan data simulasi deterministik via `/api/v1/pratyaksa/*`.
+2. **SharedPratyaksaState** menyimpan data fleet + timestamp.
 3. **Telegram Bot** query `/api/v1/pratyaksa/status` untuk cek mode.
 4. **Frontend** polling `/api/v1/pratyaksa/fleet` tiap 5 detik.
-5. Mode **LIVE** → data asli ML API; **SIMULASI** → data deterministik.
+5. Mode selalu **SIMULASI** — data dari engine Python internal.

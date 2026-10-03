@@ -3,8 +3,6 @@
 	import { api } from '$lib/api';
 	import { createMap } from '$lib/fleet-map';
 	import { resolveModel } from '$lib/models';
-	import ModeSelector from '$lib/components/ModeSelector.svelte';
-	import ModeLockTabel from '$lib/components/ModeLockTabel.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
@@ -237,11 +235,8 @@
 			<div class="w-8 h-8 rounded-full bg-steel-gradient flex items-center justify-center text-white font-bold text-xs">{(auth.user?.name || 'A').charAt(0).toUpperCase()}</div>
 			<span class="font-semibold text-sm">{auth.user?.name || 'Admin'}</span>
 		</div>
-		<ModeSelector />
 	</div>
 </header>
-
-<ModeLockTabel />
 
 <div class="space-y-7">
 	<!-- KPI -->

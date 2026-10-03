@@ -339,10 +339,6 @@ test-frontend: ## Test/type-check frontend
 	@printf "$(C_BOLD)== Frontend check ==$(C_RESET)\n"
 	cd frontend && pnpm check
 
-.PHONY: test-live
-test-live: ## Uji integrasi Live API (butuh backend berjalan)
-	BACKEND_URL="http://localhost:$(BACKEND_PORT)" bash test/test_live_api.sh
-
 .PHONY: test-api
 test-api: ## Smoke-test endpoint utama (butuh backend berjalan di :$(BACKEND_PORT))
 	@printf "$(C_BOLD)== API smoke test ==$(C_RESET)\n"
@@ -353,7 +349,7 @@ test-api: ## Smoke-test endpoint utama (butuh backend berjalan di :$(BACKEND_POR
 	done
 
 .PHONY: test-all
-test-all: test test-live ## Semua test (unit + integrasi live)
+test-all: test test-api ## Semua test (unit + smoke API)
 
 # ============================================================================
 #  DATABASE — MIGRATIONS & DUMP
@@ -437,7 +433,6 @@ urls: ## Tampilkan URL penting layanan
 	@printf "  Swagger UI      : http://localhost:$(BACKEND_PORT)/docs\n"
 	@printf "  mongo-express   : http://localhost:$(MONGO_EXPRESS_PORT)\n"
 	@printf "  pgAdmin         : http://localhost:$(PGADMIN_PORT)\n"
-	@printf "  ML API (ext)    : http://192.168.101.3:6000\n"
 
 .PHONY: version
 version: ## Tampilkan versi stack

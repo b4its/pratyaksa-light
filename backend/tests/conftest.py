@@ -18,8 +18,6 @@ os.environ.setdefault("MONGODB_URL", "mongodb://pratyaksa:pratyaksa_secret@local
 os.environ.setdefault("MONGODB_NAME", "pratyaksa")
 os.environ.setdefault("JWT_SECRET", "test_secret")
 os.environ.setdefault("MONGO_REQUIRED", "false")
-os.environ.setdefault("PRATYAKSA_POLL_INTERVAL", "3600")
-os.environ.setdefault("ML_SYNC_INTERVAL", "3600")
 
 
 async def _pg_available() -> bool:

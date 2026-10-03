@@ -75,16 +75,13 @@ async def test_send_alert_without_bot_returns_502(client):
 
 
 @pytest.mark.asyncio
-async def test_live_routes_degrade_cleanly_without_mongo(client):
-    # When MongoDB is unavailable the live routes must return a clean 503
-    # envelope (never an unhandled 500). When it *is* available, they return
-    # 200 — accept either, but require the app envelope shape.
-    resp = await client.get("/api/v1/live/stats")
-    assert resp.status_code in (200, 503)
+async def test_mongo_routes_require_auth(client):
+    # Mongo-backed analisa routes are protected; without a token they return a
+    # clean 401 envelope (never an unhandled 500).
+    resp = await client.get("/api/v1/analisa")
+    assert resp.status_code == 401
     body = resp.json()
-    assert body["status"] in ("success", "error")
-    if resp.status_code == 503:
-        assert "MongoDB" in body["message"]
+    assert body["status"] == "error"
 
 
 def test_get_mongo_dependency_raises_clean_503():

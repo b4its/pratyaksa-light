@@ -10,7 +10,6 @@ from app.api.routes import (
     dashboard,
     health_analytics,
     jenis_alat_berat,
-    live,
     pratyaksa,
     svc,
     telemetry,
@@ -37,7 +36,6 @@ api_router.include_router(analisa.router)
 api_router.include_router(telemetry.router)
 api_router.include_router(work_order.router)
 api_router.include_router(pratyaksa.router)
-api_router.include_router(live.router)
 # Service routes (model upload / telegram alert) are available both at the API
 # root (/svc/*) and under the v1 prefix (/api/v1/svc/*) so the frontend, whose
 # only configurable base is PUBLIC_API_BASE, can reach them consistently.

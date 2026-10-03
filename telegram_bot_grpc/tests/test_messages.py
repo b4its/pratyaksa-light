@@ -52,11 +52,11 @@ def test_fleet_summary():
 
 def test_pratyaksa_status():
     m = msg.build_pratyaksa_status(
-        {"mode": "live", "api_reachable": True, "fleet_count": 6,
+        {"mode": "simulasi", "fleet_count": 6,
          "last_health_check": "1s ago", "last_fleet_poll": "2s ago"}
     )
-    assert "🟢" in m
-    assert "<b>live</b>" in m
+    assert "🟡" in m
+    assert "<b>simulasi</b>" in m
 
 
 def test_unit_detail():

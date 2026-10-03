@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { api } from '$lib/api';
-	import ModeSelector from '$lib/components/ModeSelector.svelte';
-	import ModeLockTabel from '$lib/components/ModeLockTabel.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
 
@@ -137,11 +135,8 @@
 			<div class="w-8 h-8 rounded-full bg-steel-gradient flex items-center justify-center text-white font-bold text-xs">{(auth.user?.name || 'A').charAt(0).toUpperCase()}</div>
 			<span class="font-semibold text-sm">{auth.user?.name || 'Admin'}</span>
 		</div>
-		<ModeSelector />
 	</div>
 </header>
-
-<ModeLockTabel compact />
 
 {#if error}<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold flex items-center gap-2">⚠️ {error}</div>{/if}
 

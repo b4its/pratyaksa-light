@@ -5,7 +5,6 @@
 | Gejala | Penyebab | Solusi |
 |--------|----------|--------|
 | `401 Unauthorized` | Token tidak ada / kadaluarsa | Login ulang; pastikan header `Authorization: Bearer <token>` |
-| `502 Bad Gateway` (mode live) | ML API eksternal down | Ganti ke mode `simulasi` via `/pratyaksa/mode` |
 | `409 Conflict` | Duplikat nama jenis / kode unit | Gunakan nama/kode unik |
 | `404 Not Found` | ID tidak ada (UUID/ObjectId salah) | Cek ID dari endpoint list |
 | Koneksi DB gagal | Container `postgres`/`mongodb` belum siap | `docker compose ps`; tunggu `healthy` |
@@ -16,19 +15,15 @@
 Postgres 13+ sudah menyediakan `gen_random_uuid()` tanpa ekstensi `pgcrypto`.
 Image `postgres:16-alpine` aman.
 
-### MongoDB batch consumer lambat menyimpan
-Data live disimpan asinkron (batch). Cek `/live/stats` beberapa saat setelah
-mode live aktif. Producer: `MongoDb.store_*`; flush saat batch penuh / interval.
+### MongoDB — penyimpanan batch (laporan analisa)
+Laporan analisa kerusakan disimpan via batch consumer async
+(`MongoDb.store_*`); flush saat batch penuh / interval.
 
 ### Verifikasi password gagal untuk user lama
 Hash seed `$2y$05$...` (dibuat `htpasswd -nbB`) tetap valid karena memakai
 library `bcrypt` langsung (bukan passlib). Jika memakai passlib + bcrypt 5.x,
 akan error `password cannot be longer than 72 bytes` — makanya backend
 memakai `bcrypt` langsung.
-
-### Polling loop warning: "Health check gagal"
-Normal jika ML API eksternal tidak reachable; backend otomatis ke mode simulasi.
-Ubah target via `PRATYAKSA_API_URL`.
 
 ## Telegram Bot
 

@@ -6,7 +6,11 @@ Sistem AIoT Predictive dan Prescriptive Maintenance untuk Armada Alat Berat Tamb
 
 > Repositori ini adalah **porting tech stack** dari backend Rust (Actix-Web) + frontend Nuxt
 > menjadi **backend Python (FastAPI)** + **frontend Svelte (SvelteKit)**. Kontrak API,
-> model data, logika simulasi/derivasi, dan alur mode Live/Simulasi dipertahankan 1:1.
+> model data, dan logika simulasi/derivasi dipertahankan 1:1.
+>
+> ⚠️ **Mode Simulasi saja.** Seluruh data dihasilkan oleh engine simulator internal
+> (deterministik). Tidak ada koneksi ke ML API eksternal maupun ML PostgreSQL — semua
+> integrasi *live API* telah dihapus.
 
 ---
 
@@ -56,18 +60,16 @@ Sistem AIoT Predictive dan Prescriptive Maintenance untuk Armada Alat Berat Tamb
 │         │                                                               │
 │    ┌────┴──────────────────┐                                            │
 │    ▼                       ▼                                            │
-│  ┌──────────────┐  ┌──────────────┐   ┌──────────────────────────────┐  │
-│  │  PostgreSQL  │  │   MongoDB    │   │  ML API (FastAPI :6000)      │  │
-│  │  (Simulasi)  │  │   (Live)     │◄──│  XGBoost + LSTM MoE + SHAP   │  │
-│  └──────────────┘  └──────────────┘   └──────────────────────────────┘  │
+│  ┌──────────────┐  ┌──────────────┐                                     │
+│  │  PostgreSQL  │  │   MongoDB    │                                     │
+│  │  (Simulasi)  │  │   (Analisa)  │                                     │
+│  └──────────────┘  └──────────────┘                                     │
 └───────────────────────────────────────────────────────────────────────┘
 ```
 
-Backend FastAPI menjembatani UI dan lapisan ML:
-
-- **Mode SIMULASI** — data dari PostgreSQL lokal (derivasi deterministik).
-- **Mode LIVE** — polling HTTP ke ML API → simpan ke MongoDB (batch, high-speed) → tampilkan di frontend.
-- **Sync Background** — migrasi periodik data dari PostgreSQL `ml-pratyaksa` ke MongoDB lokal.
+Backend FastAPI menyajikan data **SIMULASI** yang dihasilkan engine internal
+Python (derivasi deterministik), serta CRUD unit/jenis/work-order (PostgreSQL)
+dan analisa kerusakan (MongoDB). Tidak ada polling ke ML API eksternal.
 
 ---
 
@@ -75,11 +77,11 @@ Backend FastAPI menjembatani UI dan lapisan ML:
 
 | Mode | Sumber Data | Deskripsi |
 |------|-------------|-----------|
-| **SIMULASI** | PostgreSQL | Data deterministik dari engine internal Python (paritas `frand`/`time_bucket` dengan Rust) |
-| **LIVE API** | ML API + MongoDB | Data real-time dari ML API eksternal, disimpan batch ke MongoDB |
+| **SIMULASI** | Engine internal Python | Data deterministik (paritas `frand`/`time_bucket` dengan Rust) |
 
-Mode dipilih dari UI (`POST /api/v1/pratyaksa/mode`) dan dihormati oleh background polling loop
-(manual mode lock).
+Pratyaksa berjalan **hanya** dalam mode simulasi. Endpoint `POST /pratyaksa/mode`
+tetap ada untuk kompatibilitas kontrak API tetapi selalu mengembalikan
+`mode: "simulasi"`.
 
 ---
 
@@ -93,7 +95,6 @@ Mode dipilih dari UI (`POST /api/v1/pratyaksa/mode`) dan dihormati oleh backgrou
 | PostgreSQL driver | asyncpg (pool + migration runner SQL) |
 | MongoDB driver | PyMongo (async API) dengan batch consumer |
 | Auth | python-jose (JWT HS256) + bcrypt |
-| HTTP client | httpx (polling ML API) |
 | Alert | gRPC (grpcio) ke service bot Telegram |
 
 ### Frontend
@@ -119,8 +120,8 @@ py-pratyaksa/
 │   │   ├── db/                     # postgres.py, mongo.py
 │   │   ├── schemas/                # Pydantic models (per domain)
 │   │   ├── services/               # health_analytics derivation, telegram gRPC
-│   │   ├── pratyaksa/              # state, simulator, polling, sync
-│   │   └── api/routes/             # auth, dashboard, CRUD, analisa, pratyaksa, live, svc
+│   │   ├── pratyaksa/              # state, simulator (simulation-only)
+│   │   └── api/routes/             # auth, dashboard, CRUD, analisa, pratyaksa, svc
 │   ├── migrations/                 # SQL migrations (same as Rust)
 │   ├── tests/                      # pytest (unit + integration)
 │   ├── requirements.txt
@@ -146,7 +147,6 @@ py-pratyaksa/
 │   └── Dockerfile
 ├── nginx/nginx.conf
 ├── catatan/                        # Dokumentasi proses pengembangan
-├── test/test_live_api.sh           # Skrip uji integrasi Live API
 ├── docker-compose.yml
 ├── .example.docker-compose.yml
 ├── API_TESTING.md
@@ -180,21 +180,16 @@ tersedia di bawah `/api/v1/svc/*` agar konsisten dengan base URL frontend.
 | GET | `/telemetry/unit/{id}` | ✔ | Riwayat telemetri unit |
 | GET/POST | `/work-orders` | ✔ | List / create work order |
 | GET/PUT | `/work-orders/{id}` | ✔ | Detail / update work order |
-| GET | `/pratyaksa/status` | – | Status mode & reachability |
-| GET | `/pratyaksa/fleet` | – | Data fleet (live/simulasi) |
+| GET | `/pratyaksa/status` | – | Status mode & fleet (simulasi) |
+| GET | `/pratyaksa/fleet` | – | Data fleet (simulasi) |
 | GET | `/pratyaksa/fleet/health` | – | Ringkasan health fleet |
 | GET | `/pratyaksa/result/{asset_id}` | – | Hasil prediksi per asset |
 | POST | `/pratyaksa/predict` | – | Prediksi (37 fitur) |
-| POST | `/pratyaksa/workorder` | – | Generate WO dari ML |
+| POST | `/pratyaksa/workorder` | – | Generate WO dari simulator |
 | GET | `/pratyaksa/features` | – | 37 nama fitur sensor |
 | GET | `/pratyaksa/explain/{id}` | – | SHAP explanation |
-| POST | `/pratyaksa/reload-models` | – | Reload model ML |
-| POST | `/pratyaksa/mode` | – | Ganti mode (live/simulasi/auto) |
-| GET | `/live/predictions` | – | Prediksi tersimpan (MongoDB) |
-| GET | `/live/predictions/{asset}/latest` | – | Prediksi terbaru per asset |
-| GET | `/live/fleet` | – | Fleet snapshot tersimpan |
-| GET | `/live/work-orders` | – | Work order tersimpan (live) |
-| GET | `/live/stats` | – | Statistik data live |
+| POST | `/pratyaksa/reload-models` | – | Reload model (simulasi) |
+| POST | `/pratyaksa/mode` | – | Mode (selalu `simulasi`) |
 | POST | `/svc/upload-model` | – | Upload model 3D (.glb/.gltf) — juga di `/api/v1/svc/upload-model` |
 | POST | `/svc/send-alert` | – | Kirim alert ke bot Telegram (gRPC) — juga di `/api/v1/svc/send-alert` |
 
@@ -293,10 +288,6 @@ Lihat `.env.example`. Ringkasan variabel penting:
 | `MONGODB_URL` | — | Koneksi MongoDB (wajib) |
 | `MONGODB_NAME` | `pratyaksa` | Nama database MongoDB |
 | `JWT_SECRET` | — | Secret JWT (ganti di produksi) |
-| `PRATYAKSA_API_URL` | `http://192.168.101.3:6000` | Endpoint ML API eksternal |
-| `PRATYAKSA_POLL_INTERVAL` | `5` | Interval polling (detik) |
-| `ML_POSTGRES_URL` | — | PostgreSQL `ml-pratyaksa` untuk sync |
-| `ML_SYNC_INTERVAL` | `60` | Interval sync ML (detik) |
 | `PUBLIC_API_BASE` | `http://localhost:8116/api/v1` | Base URL API untuk frontend |
 | `CORS_ORIGINS` | `*` | Origin CORS diizinkan (comma-separated) |
 

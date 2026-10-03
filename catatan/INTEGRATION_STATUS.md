@@ -1,14 +1,14 @@
 # Integration Status
 
 Ringkasan status integrasi antar komponen pada stack FastAPI + Svelte.
+Semua data Pratyaksa berasal dari **simulator internal** (mode simulasi).
 
 | Integrasi | Status | Keterangan |
 |-----------|:------:|------------|
 | SvelteKit ↔ Backend FastAPI | ✅ | Semua endpoint `/api/v1` + `/svc` (+ alias `/api/v1/svc`) |
 | Backend ↔ PostgreSQL | ✅ | asyncpg pool + migrations |
-| Backend ↔ MongoDB | ✅ | Async PyMongo + batch consumer |
-| Backend ↔ ML API (live) | ✅ | httpx polling + fallback simulasi |
-| Backend ↔ ml-pratyaksa PG (sync) | ✅ | Task sync periodik |
+| Backend ↔ MongoDB | ✅ | Async PyMongo + batch consumer (analisa kerusakan) |
+| Backend ↔ Simulator | ✅ | Engine deterministik internal (mode simulasi) |
 | Backend ↔ Telegram Bot (gRPC) | ✅ | `/svc/send-alert` → gRPC `SendAlert` |
 | Telegram Bot ↔ Telegram API | ✅ | long-polling getUpdates + sendMessage |
 | Telegram Bot ↔ Backend | ✅ | `/fleet-summary`, `/pratyaksa/status`, `/pratyaksa/result` |
@@ -19,16 +19,18 @@ Ringkasan status integrasi antar komponen pada stack FastAPI + Svelte.
 ## Alur Data
 
 ```
-ML API ──polling──► Backend ──batch──► MongoDB ──read──► Frontend
-                      │
-                      ├──► PostgreSQL (master data, telemetry, WO)
-                      │
-                      └──gRPC──► Telegram Bot ──► Telegram
+Simulator Internal ──► Backend ──► Frontend
+                         │
+                         ├──► PostgreSQL (master data, telemetry, WO)
+                         │
+                         └──gRPC──► Telegram Bot ──► Telegram
 ```
 
 ## Mode
 
-| Mode | Sumber | Fallback |
-|------|--------|----------|
-| SIMULASI | Simulator Python deterministik | – |
-| LIVE | ML API eksternal | Otomatis ke SIMULASI bila unreachable |
+| Mode | Sumber |
+|------|--------|
+| SIMULASI (satu-satunya) | Simulator Python deterministik |
+
+> Integrasi **live API** (polling ML API eksternal + sync ml-pratyaksa
+> PostgreSQL → MongoDB + route `/live/*`) telah **dihapus**.

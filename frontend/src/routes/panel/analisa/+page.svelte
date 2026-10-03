@@ -4,8 +4,6 @@
 	import { resolveModel } from '$lib/models';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
-	import ModeSelector from '$lib/components/ModeSelector.svelte';
-	import ModeLockTabel from '$lib/components/ModeLockTabel.svelte';
 
 	let overview = $state<any>(null);
 	let analysis = $state<any>(null);
@@ -111,116 +109,6 @@
 			: []
 	);
 
-	// --- LIVE mode normalization (parity with Nuxt normalizeLiveAnalysis) ---
-	function normalizeLiveAnalysis(data: any): any {
-		const pred = data.prediction || {};
-		return {
-			unit: {
-				id: data.unit?.id || '',
-				code: data.unit?.code || 'unknown',
-				jenis_alat_berat_nama: data.unit?.jenis_alat_berat_nama || null,
-				status: data.unit?.status || 'NORMAL',
-				health: data.unit?.health ?? 80,
-				img_url: null,
-				model3d_url: null
-			},
-			risk_score: data.risk_score ?? 30,
-			risk_level: data.risk_level || 'LOW',
-			sensor_readings: {
-				suhu_mesin: data.sensor_readings?.suhu_mesin ?? 85,
-				vibration: data.sensor_readings?.vibration ?? 2.0,
-				tekanan_oli: data.sensor_readings?.tekanan_oli ?? 55,
-				rpm: data.sensor_readings?.rpm ?? 1500,
-				fuel_level: data.sensor_readings?.fuel_level ?? 65,
-				oil_particle_iso: data.sensor_readings?.oil_particle_iso ?? 15,
-				acoustic_db: data.sensor_readings?.acoustic_db ?? 50,
-				jam_operasi: data.sensor_readings?.jam_operasi ?? 5000
-			},
-			component_health: data.component_health || [
-				{ component: 'Engine', health: data.unit?.health ?? 80 },
-				{ component: 'Hidrolik', health: Math.round((data.unit?.health ?? 80) * 0.9) },
-				{ component: 'Transmisi', health: Math.round((data.unit?.health ?? 80) * 0.85) },
-				{ component: 'Rem', health: Math.round((data.unit?.health ?? 80) * 0.8) },
-				{ component: 'Bearing', health: Math.round((data.unit?.health ?? 80) * 0.88) },
-				{ component: 'Kelistrikan', health: Math.round((data.unit?.health ?? 80) * 0.92) }
-			],
-			rul_prediction: data.rul_prediction || {
-				component: pred.lstm_components?.[0]?.label || 'Engine',
-				hours_remaining: pred.lstm_rul_hours ?? 1000,
-				lower_bound: (pred.lstm_rul_hours ?? 1000) * 0.82,
-				upper_bound: (pred.lstm_rul_hours ?? 1000) * 1.18,
-				confidence: 85
-			},
-			shap_contributions: data.shap_contributions || [],
-			sensor_history: data.sensor_history || [],
-			telemetry: {
-				component_type: data.telemetry?.component_type || pred.equipment_type || 'Heavy Equipment',
-				operator_id: data.telemetry?.operator_id || 'OP-Sistem',
-				payload_tonnage: data.telemetry?.payload_tonnage ?? 0,
-				hour_meter_actual: data.telemetry?.hour_meter_actual ?? 5000,
-				design_life_hm: data.telemetry?.design_life_hm ?? 20000,
-				component_age_hm: data.telemetry?.component_age_hm ?? 5000,
-				is_remanufactured: data.telemetry?.is_remanufactured ?? false,
-				ambient_temp_c: data.telemetry?.ambient_temp_c ?? 30,
-				idle_time_ratio: data.telemetry?.idle_time_ratio ?? 0.15,
-				eng_coolant_temp_c: data.sensor_readings?.suhu_mesin ?? 85,
-				eng_oil_press_psi: data.telemetry?.eng_oil_press_psi ?? 55,
-				eng_rpm: data.sensor_readings?.rpm ?? 1500,
-				eng_load_pct: data.telemetry?.eng_load_pct ?? 60,
-				hyd_pump_press_psi: data.telemetry?.hyd_pump_press_psi ?? 3200,
-				hyd_oil_temp_c: data.telemetry?.hyd_oil_temp_c ?? 80,
-				trans_oil_temp_c: data.telemetry?.trans_oil_temp_c ?? 85,
-				torque_converter_temp_c: data.telemetry?.torque_converter_temp_c ?? 90,
-				final_drive_temp_c: data.telemetry?.final_drive_temp_c ?? 80,
-				brake_cooling_temp_c: data.telemetry?.brake_cooling_temp_c ?? 70,
-				battery_voltage: data.telemetry?.battery_voltage ?? 27.5,
-				fault_code_severity: data.telemetry?.fault_code_severity ?? 0,
-				lab_fe_ppm: data.telemetry?.lab_fe_ppm ?? 20,
-				lab_cu_ppm: data.telemetry?.lab_cu_ppm ?? 5,
-				lab_al_ppm: data.telemetry?.lab_al_ppm ?? 3,
-				lab_si_ppm: data.telemetry?.lab_si_ppm ?? 8,
-				lab_viscosity_100c: data.telemetry?.lab_viscosity_100c ?? 14.5,
-				lab_water_content_pct: data.telemetry?.lab_water_content_pct ?? 0.05,
-				lab_soot_pct: data.telemetry?.lab_soot_pct ?? 0.5,
-				delta_eng_temp: data.telemetry?.delta_eng_temp ?? 10,
-				status_label: pred.risk_level || data.unit?.status || 'NORMAL',
-				rul_hours: pred.lstm_rul_hours ?? 1000
-			},
-			prediction: {
-				asset_id: pred.asset_id || data.unit?.code || '',
-				equipment_type: pred.equipment_type || data.unit?.jenis_alat_berat_nama || '',
-				xgb_anomaly_class: pred.xgb_anomaly_class ?? 0,
-				xgb_anomaly_label: pred.xgb_anomaly_label || 'NORMAL',
-				lstm_rul_hours: pred.lstm_rul_hours ?? 1000,
-				rul_uncertainty: pred.rul_uncertainty ?? 50,
-				risk_level: pred.risk_level || data.risk_level || 'LOW',
-				risk_class: pred.risk_class ?? 0,
-				model_agreement: pred.model_agreement ?? true,
-				lstm_hydraulic_system: pred.lstm_hydraulic_system ?? pred.RUL_hydraulic_system ?? 500,
-				lstm_hydraulic_pump: pred.lstm_hydraulic_pump ?? pred.RUL_hydraulic_pump ?? 400,
-				lstm_pump_seal: pred.lstm_pump_seal ?? pred.RUL_pump_seal_main ?? 300,
-				lstm_brake_system: pred.lstm_brake_system ?? pred.RUL_brake_system ?? 450,
-				lstm_brake_caliper: pred.lstm_brake_caliper ?? pred.RUL_brake_caliper ?? 350,
-				lstm_brake_pad: pred.lstm_brake_pad ?? pred.RUL_brake_pad_rear ?? 200,
-				lstm_steering_system: pred.lstm_steering_system ?? pred.RUL_steering_system ?? 500,
-				digital_twin: {
-					brake_twin_rul: pred.digital_twin?.brake_twin_rul ?? 500,
-					bearing_twin_rul: pred.digital_twin?.bearing_twin_rul ?? 600,
-					hydraulic_twin_rul: pred.digital_twin?.hydraulic_twin_rul ?? 450
-				},
-				drift_status: {
-					drift_detected: pred.drift_status?.drift_detected ?? false,
-					drifted_features: pred.drift_status?.drifted_features || [],
-					max_z_score: pred.drift_status?.max_z_score ?? 0.0,
-					n_drifted: pred.drift_status?.n_drifted ?? 0
-				},
-				latency_ms: pred.latency_ms ?? 0
-			},
-			operational: data.operational || {},
-			updated_at: data.updated_at || new Date().toISOString()
-		};
-	}
-
 	// --- fetch ---
 	async function fetchOverview() {
 		try {
@@ -239,7 +127,7 @@
 		if (!selectedUnitId) return;
 		try {
 			const res: any = await api.getUnitAnalysis(selectedUnitId);
-			analysis = res.mode === 'live' ? normalizeLiveAnalysis(res.data) : res.data;
+			analysis = res.data;
 			lastUpdate = new Date().toLocaleTimeString('id-ID');
 		} catch (e: any) {
 			error = e?.message || 'Gagal memuat analitik unit.';
@@ -295,7 +183,6 @@
 	}
 
 	async function maybeSendAlert() {
-		if (pratyaksa.sourceMode !== 'live-telegram') return;
 		const ov = overview;
 		if (!ov || !Array.isArray(ov.units)) return;
 		const atRisk = ov.units.filter((u: any) => ALERT_STATUSES.includes(u.status));
@@ -741,7 +628,7 @@
 		}, 15000);
 
 		alertTimer = setInterval(() => {
-			if (pratyaksa.sourceMode === 'live-telegram') maybeSendAlert();
+			maybeSendAlert();
 		}, 5000);
 	});
 
@@ -770,14 +657,21 @@
 		<p class="mt-2 text-[color:var(--text-muted)]">Monitoring kondisi &amp; prediksi kegagalan armada secara real-time.</p>
 	</div>
 	<div class="flex items-center gap-3">
-		<ModeSelector showSubModes ontesttelegram={testTelegram} />
+		<button
+			class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-[color:var(--border)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-2)] transition-all disabled:opacity-60"
+			disabled={alertTesting}
+			onclick={testTelegram}
+		>
+			<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
+				><path stroke-linecap="round" stroke-linejoin="round" d="M8.29 6.293a9 9 0 1111.418 11.418M12 2a10 10 0 019.95 9M2 12h2m2-6-2-2m14 14l2 2M12 20v2m-4-2l-2 2" /></svg
+			>
+			{alertTesting ? 'Mengirim…' : 'Test Telegram'}
+		</button>
 		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">
 			Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span>
 		</div>
 	</div>
 </header>
-
-<ModeLockTabel showSubModes ontesttelegram={testTelegram} />
 
 {#if alertStatus}
 	<div

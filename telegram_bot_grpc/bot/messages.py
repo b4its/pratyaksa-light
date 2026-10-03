@@ -59,7 +59,7 @@ def start_menu_keyboard() -> list[list[dict[str, str]]]:
     return [
         [{"text": "📊 Laporan Realtime", "callback_data": "/status"}],
         [{"text": "📋 Laporan Realtime + Detail Data", "callback_data": "/detail"}],
-        [{"text": "🤖 Status DS API", "callback_data": "/pratyaksa"}],
+        [{"text": "🤖 Status Pratyaksa", "callback_data": "/pratyaksa"}],
         [{"text": "Matikan Notifikasi Pratyaksa", "callback_data": "/down"}],
     ]
 
@@ -78,21 +78,17 @@ def build_fleet_summary(data: dict[str, Any]) -> str:
 
 
 def build_pratyaksa_status(data: dict[str, Any]) -> str:
-    mode = data.get("mode", "unknown")
-    reachable = bool(data.get("api_reachable", False))
+    mode = data.get("mode", "simulasi")
     fleet = data.get("fleet_count", 0)
     health = data.get("last_health_check") or "-"
     poll = data.get("last_fleet_poll") or "-"
-    mode_icon = "🟢" if mode == "live" else "🟡"
-    reachable_icon = "✅" if reachable else "❌"
     return (
-        "🤖 <b>PRATYAKSA DS API Status</b>\n\n"
-        f"{mode_icon} Mode       : <b>{mode}</b>\n"
-        f"{reachable_icon} Reachable : {reachable}\n"
+        "🤖 <b>PRATYAKSA Status</b>\n\n"
+        f"🟡 Mode       : <b>{mode}</b>\n"
         f"📦 Fleet Count : {fleet} unit\n"
         f"🩺 Health Check : {health}\n"
         f"📡 Fleet Poll   : {poll}\n\n"
-        "<i>Polling tiap 5 detik — otomatis beralih ke SIMULASI jika server DS down.</i>"
+        "<i>Mode simulasi — data dihasilkan engine Python internal (tanpa koneksi eksternal).</i>"
     )
 
 
@@ -107,11 +103,10 @@ def build_unit_detail(mode: str, d: dict[str, Any]) -> str:
     hydraulic_twin = float(twin.get("hydraulic_twin_rul", 0.0) or 0.0)
 
     risk_icon = {"CRITICAL": "🔴", "WARNING": "🟡", "NORMAL": "🟢"}.get(risk_level, "⚪")
-    mode_icon = "🟢" if mode == "live" else "🟡"
 
     return (
         f"🚜 <b>UNIT DETAIL: {d.get('asset_id', 'N/A')}</b>\n\n"
-        f"{mode_icon} <b>Sumber Data:</b> {mode}\n\n"
+        f"🟡 <b>Sumber Data:</b> {mode}\n\n"
         f"📍 <b>Tipe:</b> {d.get('equipment_type', 'N/A')}\n"
         f"{risk_icon} <b>Risk Level:</b> {risk_level}\n"
         f"🕒 <b>RUL:</b> {lstm_rul:.0f} jam\n"
@@ -175,7 +170,7 @@ def build_detail_report(
             f"┃   Drift: {drift_icon} | Model: {agree_icon}\n"
         )
 
-    mode_icon = "🟢" if mode == "live" else "🟡"
+    mode_icon = "🟡"
     first_rul = float(fleet[0].get("lstm_rul_hours", 500.0) or 500.0) if fleet else 500.0
 
     return (
