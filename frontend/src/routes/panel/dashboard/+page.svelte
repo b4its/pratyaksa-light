@@ -184,7 +184,6 @@
 
 	onMount(async () => {
 		auth.init();
-		injectModelViewer();
 		try {
 			await Promise.all([loadDashboard(), loadUnits()]);
 		} catch (e) {
@@ -203,15 +202,6 @@
 		if (chart) chart.destroy();
 		pratyaksa.stopPolling();
 	});
-
-	function injectModelViewer() {
-		if (document.querySelector('script[data-model-viewer]')) return;
-		const s = document.createElement('script');
-		s.type = 'module';
-		s.dataset.modelViewer = 'true';
-		s.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js';
-		document.head.appendChild(s);
-	}
 
 	// Recolor chart & map when the theme toggles.
 	$effect(() => {

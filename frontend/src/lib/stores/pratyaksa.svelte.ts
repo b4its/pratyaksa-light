@@ -3,6 +3,24 @@ import { env } from '$env/dynamic/public';
 
 const baseURL = env.PUBLIC_API_BASE || 'http://localhost:8114/api/v1';
 
+/** GET + parse JSON, throwing a readable error on HTTP/parse failure. */
+async function getJson(path: string): Promise<any> {
+	const res = await fetch(`${baseURL}${path}`);
+	const text = await res.text();
+	let data: any = null;
+	if (text) {
+		try {
+			data = JSON.parse(text);
+		} catch {
+			data = null;
+		}
+	}
+	if (!res.ok) {
+		throw new Error(data?.message || data?.detail || `HTTP ${res.status}`);
+	}
+	return data;
+}
+
 export type BackendMode = 'live' | 'simulasi';
 export type SourceMode = 'live-silent' | 'live-telegram' | 'hit-endpoint-sendiri' | 'hit-endpoint-ml';
 
@@ -45,8 +63,9 @@ class PratyaksaStore {
 
 	async fetchStatus() {
 		try {
-			const res = await fetch(`${baseURL}/pratyaksa/status`).then((r) => r.json());
+			const res = await getJson('/pratyaksa/status');
 			this.status = res.data;
+			this.error = null;
 			return res.data;
 		} catch (e: any) {
 			this.error = e?.message || 'Gagal fetch status';
@@ -56,9 +75,10 @@ class PratyaksaStore {
 
 	async fetchFleet() {
 		try {
-			const res = await fetch(`${baseURL}/pratyaksa/fleet`).then((r) => r.json());
+			const res = await getJson('/pratyaksa/fleet');
 			this.fleetData = res.data.fleet;
 			this.status.mode = res.data.mode;
+			this.error = null;
 			return res.data;
 		} catch (e: any) {
 			this.error = e?.message || 'Gagal fetch fleet';
@@ -68,8 +88,9 @@ class PratyaksaStore {
 
 	async fetchFleetHealth() {
 		try {
-			const res = await fetch(`${baseURL}/pratyaksa/fleet/health`).then((r) => r.json());
+			const res = await getJson('/pratyaksa/fleet/health');
 			this.fleetHealth = res.data;
+			this.error = null;
 			return res.data;
 		} catch (e: any) {
 			this.error = e?.message || 'Gagal fetch fleet health';
@@ -79,7 +100,7 @@ class PratyaksaStore {
 
 	async fetchResult(assetId: string) {
 		try {
-			const res = await fetch(`${baseURL}/pratyaksa/result/${assetId}`).then((r) => r.json());
+			const res = await getJson(`/pratyaksa/result/${assetId}`);
 			return res.data;
 		} catch {
 			return null;
@@ -88,7 +109,7 @@ class PratyaksaStore {
 
 	async fetchExplain(predictionId: string) {
 		try {
-			const res = await fetch(`${baseURL}/pratyaksa/explain/${predictionId}`).then((r) => r.json());
+			const res = await getJson(`/pratyaksa/explain/${predictionId}`);
 			return res.data;
 		} catch {
 			return null;
@@ -101,9 +122,21 @@ class PratyaksaStore {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(body)
-		}).then((r) => r.json());
+		});
+		const text = await res.text();
+		let data: any = null;
+		if (text) {
+			try {
+				data = JSON.parse(text);
+			} catch {
+				data = null;
+			}
+		}
+		if (!res.ok) {
+			throw new Error(data?.message || data?.detail || `HTTP ${res.status}`);
+		}
 		await this.fetchStatus();
-		return res;
+		return data;
 	}
 
 	async fetchAll() {

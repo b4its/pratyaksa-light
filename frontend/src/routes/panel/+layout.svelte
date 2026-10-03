@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
 	import PanelSidebar from '$lib/components/PanelSidebar.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 
