@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import { auth } from '$lib/stores/auth.svelte';
-	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
 
 	let items = $state<any[]>([]);
 	let loading = $state(true);
@@ -117,10 +116,7 @@
 
 	onMount(() => {
 		load();
-		pratyaksa.fetchAll();
-		pratyaksa.startPolling(10000);
 	});
-	onDestroy(() => pratyaksa.stopPolling());
 </script>
 
 <svelte:head><title>Jenis Alat Berat — Pratyaksa</title></svelte:head>

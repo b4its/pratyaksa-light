@@ -5,7 +5,6 @@
 	import { createMap } from '$lib/fleet-map';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
-	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
 
 	interface WoItem {
 		id: string;
@@ -82,13 +81,15 @@
 	const repairCountdown = $derived.by(() => {
 		if (!modalItem) return '00:00:00';
 		let ms = Math.max(0, modalItem.estCompletionDate.getTime() - nowTick);
+		const d = Math.floor(ms / 86_400_000);
+		ms -= d * 86_400_000;
 		const h = Math.floor(ms / 3_600_000);
 		ms -= h * 3_600_000;
 		const m = Math.floor(ms / 60_000);
 		ms -= m * 60_000;
 		const s = Math.floor(ms / 1000);
 		const pad = (n: number) => String(n).padStart(2, '0');
-		return `${pad(h)}:${pad(m)}:${pad(s)}`;
+		return d > 0 ? `${d}h ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`;
 	});
 
 	// Saved WO
@@ -601,8 +602,6 @@
 		await tick();
 		renderAll();
 		await fetchWorkOrders();
-		pratyaksa.fetchAll();
-		pratyaksa.startPolling(10000);
 
 		// Deep-link ?asset=KODE (from Telegram) → open the create-WO modal.
 		const assetQuery = pageStore.url.searchParams.get('asset');
@@ -633,7 +632,6 @@
 				/* ignore */
 			}
 		}
-		pratyaksa.stopPolling();
 		Object.values(charts).forEach((c) => c?.destroy());
 	});
 

@@ -3,7 +3,6 @@
 	import { api } from '$lib/api';
 	import { resolveModel } from '$lib/models';
 	import { theme } from '$lib/stores/theme.svelte';
-	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
 
 	let overview = $state<any>(null);
 	let analysis = $state<any>(null);
@@ -11,6 +10,7 @@
 	let isLoading = $state(true);
 	let error = $state('');
 	let autoRefresh = $state(true);
+	let autoAlert = $state(false);
 	let lastUpdate = $state('');
 
 	// Unit list pagination
@@ -620,15 +620,12 @@
 		await tick();
 		renderAllCharts();
 
-		pratyaksa.fetchAll();
-		pratyaksa.startPolling(10000);
-
 		refreshTimer = setInterval(() => {
 			if (autoRefresh) refreshAll();
 		}, 15000);
 
 		alertTimer = setInterval(() => {
-			maybeSendAlert();
+			if (autoAlert) maybeSendAlert();
 		}, 5000);
 	});
 
@@ -636,7 +633,6 @@
 		if (refreshTimer) clearInterval(refreshTimer);
 		if (alertTimer) clearInterval(alertTimer);
 		if (alertStatusTimer) clearTimeout(alertStatusTimer);
-		pratyaksa.stopPolling();
 		Object.values(charts).forEach((c) => c?.destroy());
 	});
 
@@ -657,6 +653,16 @@
 		<p class="mt-2 text-[color:var(--text-muted)]">Monitoring kondisi &amp; prediksi kegagalan armada secara real-time.</p>
 	</div>
 	<div class="flex items-center gap-3">
+		<button
+			class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all {autoAlert ? 'border-healthy/40 bg-healthy/10 text-healthy' : 'border-[color:var(--border)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-2)]'}"
+			role="switch"
+			aria-checked={autoAlert}
+			title="Kirim alert otomatis ke Telegram untuk unit CRITICAL/WARNING"
+			onclick={() => (autoAlert = !autoAlert)}
+		>
+			<span class="w-2 h-2 rounded-full {autoAlert ? 'bg-healthy' : 'bg-[color:var(--text-faint)]'}"></span>
+			Auto Alert {autoAlert ? 'ON' : 'OFF'}
+		</button>
 		<button
 			class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-[color:var(--border)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-2)] transition-all disabled:opacity-60"
 			disabled={alertTesting}

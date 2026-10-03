@@ -5,7 +5,6 @@
 	import { resolveModel, modelForType } from '$lib/models';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
-	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
 
 	const perPage = 5;
 
@@ -273,6 +272,7 @@
 
 	function exportCSV() {
 		const headers = ['Kode', 'Jenis', 'Status', 'Health', 'Maintenance', 'Savings'];
+		const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 		const rows = units.map((u) => [
 			u.code,
 			u.jenis_alat_berat_nama || '',
@@ -281,13 +281,15 @@
 			u.maintenance,
 			u.savings
 		]);
-		const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
-		const blob = new Blob([csv], { type: 'text/csv' });
+		const csv = [headers, ...rows].map((r) => r.map(esc).join(',')).join('\n');
+		const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
 		a.download = 'unit_tambang.csv';
+		document.body.appendChild(a);
 		a.click();
+		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
 		isExportOpen = false;
 	}
@@ -296,14 +298,11 @@
 		await fetchJenisOptions();
 		await fetchUnits();
 		await loadSensorMap();
-		pratyaksa.fetchAll();
-		pratyaksa.startPolling(10000);
 	});
 
 	onDestroy(() => {
 		if (sensorMap) sensorMap.remove();
 		if (sensorFullMap) sensorFullMap.remove();
-		pratyaksa.stopPolling();
 	});
 
 	$effect(() => {

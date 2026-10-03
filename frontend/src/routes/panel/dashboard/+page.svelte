@@ -5,9 +5,9 @@
 	import { resolveModel } from '$lib/models';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
-	import { pratyaksa } from '$lib/stores/pratyaksa.svelte';
 
 	let isLoading = $state(true);
+	let error = $state('');
 	let dashboardKPI = $state({ totalUnits: 0, activeUnits: 0, criticalUnits: 0, totalSavings: 0 });
 	let statusDistribution = $state<{ label: string; jumlah: number; color: string }[]>([]);
 	let monthlyFleetData = $state<any[]>([]);
@@ -184,21 +184,19 @@
 		auth.init();
 		try {
 			await Promise.all([loadDashboard(), loadUnits()]);
-		} catch (e) {
-			console.error('Failed to load dashboard', e);
+			error = '';
+		} catch (e: any) {
+			error = e?.message || 'Gagal memuat data dashboard.';
 		}
 		isLoading = false;
 		await tick();
 		await Promise.all([buildChart(), buildMap()]);
-		pratyaksa.fetchAll();
-		pratyaksa.startPolling(10000);
 	});
 
 	onDestroy(() => {
 		if (leafletMap) leafletMap.remove();
 		if (fullMap) fullMap.remove();
 		if (chart) chart.destroy();
-		pratyaksa.stopPolling();
 	});
 
 	// Recolor chart & map when the theme toggles.
@@ -238,6 +236,8 @@
 	</div>
 </header>
 
+{#if error}<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold flex items-center gap-2">⚠️ {error}</div>{/if}
+
 <div class="space-y-7">
 	<!-- KPI -->
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -260,7 +260,7 @@
 			</div>
 			<div class="kpi anim-pop d-4 p-6 text-white" style="--accent:#F2A60C;background:linear-gradient(135deg,#2c3643,#141a21)">
 				<p class="text-[11px] font-semibold uppercase tracking-wider text-amber mb-2">Total Saving</p>
-				<p class="font-display text-4xl font-bold mt-1">${dashboardKPI.totalSavings.toLocaleString()}</p>
+				<p class="font-display text-4xl font-bold mt-1">{dashboardKPI.totalSavings < 0 ? '-' : ''}${Math.abs(dashboardKPI.totalSavings).toLocaleString()}</p>
 			</div>
 		{/if}
 	</div>
