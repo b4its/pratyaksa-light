@@ -84,6 +84,42 @@ async def generic_exception_handler(_request: Request, exc: Exception) -> JSONRe
     )
 
 
+async def integrity_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
+    """Map asyncpg integrity violations to clean 4xx responses.
+
+    Without this, a unique/foreign-key violation surfaces as a 500 with the raw
+    driver message (leaking table/constraint names). We translate the common
+    cases into the standard app error envelope.
+    """
+    # Imported lazily so the module stays importable even if asyncpg is absent.
+    try:
+        from asyncpg.exceptions import (
+            ForeignKeyViolationError,
+            UniqueViolationError,
+        )
+    except Exception:  # pragma: no cover - asyncpg always present in prod
+        UniqueViolationError = ()  # type: ignore[assignment]
+        ForeignKeyViolationError = ()  # type: ignore[assignment]
+
+    if isinstance(exc, UniqueViolationError):
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={"status": "error", "message": "Data sudah ada (duplikat)"},
+        )
+    if isinstance(exc, ForeignKeyViolationError):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "status": "error",
+                "message": "Referensi tidak valid (data terkait tidak ditemukan atau masih dipakai)",
+            },
+        )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"status": "error", "message": f"Internal server error: {exc}"},
+    )
+
+
 def _format_validation_errors(exc: RequestValidationError) -> str:
     """Render Pydantic validation errors as a single human-readable message.
 

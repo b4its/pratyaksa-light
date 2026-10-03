@@ -131,6 +131,60 @@ async def test_unit_tambang_crud_and_telemetry(client):
 
 
 @pytest.mark.asyncio
+async def test_unit_tambang_update_rejects_duplicate_code(client):
+    """Editing a unit's code to one already used must fail cleanly (409).
+
+    Regression: the update route lacked the duplicate check the create route
+    has, so the DB unique constraint raised a raw 500 instead of a 409.
+    """
+    _, _, headers = await _register(client)
+    jenis = await client.post(
+        "/api/v1/jenis-alat-berat",
+        json={"nama": f"Dup Type {uuid.uuid4().hex[:6]}"},
+        headers=headers,
+    )
+    jenis_id = jenis.json()["data"]["id"]
+
+    base = {
+        "jenis_alat_berat_id": jenis_id,
+        "status": "SEHAT",
+        "health": 90,
+        "maintenance": "OK",
+        "savings": 0,
+    }
+    code_a = f"UT-A-{uuid.uuid4().hex[:6]}"
+    code_b = f"UT-B-{uuid.uuid4().hex[:6]}"
+    a = await client.post("/api/v1/unit-tambang", json={"code": code_a, **base}, headers=headers)
+    b = await client.post("/api/v1/unit-tambang", json={"code": code_b, **base}, headers=headers)
+    assert a.status_code == 201 and b.status_code == 201
+    id_a, id_b = a.json()["data"]["id"], b.json()["data"]["id"]
+
+    # B → A's code (exact) must be a clean 409.
+    dup = await client.put(
+        f"/api/v1/unit-tambang/{id_b}", json={"code": code_a}, headers=headers
+    )
+    assert dup.status_code == 409, dup.text
+    assert dup.json()["status"] == "error"
+
+    # Case-insensitive duplicate also rejected.
+    dup_ci = await client.put(
+        f"/api/v1/unit-tambang/{id_b}", json={"code": code_a.lower()}, headers=headers
+    )
+    assert dup_ci.status_code == 409, dup_ci.text
+
+    # Editing a unit without changing its own code must still succeed.
+    own = await client.put(
+        f"/api/v1/unit-tambang/{id_b}", json={"code": code_b, "health": 77}, headers=headers
+    )
+    assert own.status_code == 200, own.text
+    assert own.json()["data"]["health"] == 77
+
+    for uid in (id_a, id_b):
+        await client.delete(f"/api/v1/unit-tambang/{uid}", headers=headers)
+    await client.delete(f"/api/v1/jenis-alat-berat/{jenis_id}", headers=headers)
+
+
+@pytest.mark.asyncio
 async def test_work_order_lifecycle(client):
     _, _, headers = await _register(client)
     code = f"WO-UNIT-{uuid.uuid4().hex[:6]}"

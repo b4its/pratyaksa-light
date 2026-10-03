@@ -21,6 +21,7 @@ from app.core.errors import (
     app_error_handler,
     generic_exception_handler,
     http_exception_handler,
+    integrity_exception_handler,
     validation_exception_handler,
 )
 from app.db.mongo import MongoDb
@@ -137,6 +138,16 @@ def create_app() -> FastAPI:
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
+
+    # Map raw asyncpg integrity violations (unique/FK) to clean 4xx responses
+    # so driver messages never leak as 500s.
+    try:
+        from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
+
+        app.add_exception_handler(UniqueViolationError, integrity_exception_handler)
+        app.add_exception_handler(ForeignKeyViolationError, integrity_exception_handler)
+    except Exception:  # pragma: no cover - asyncpg always present in prod
+        pass
 
     app.include_router(configure_v1())
     app.include_router(svc_routes.router)

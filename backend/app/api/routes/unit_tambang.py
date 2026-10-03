@@ -175,6 +175,18 @@ async def update(
         raise ValidationError("Status harus salah satu dari: SEHAT, WARNING, CRITICAL, RUSAK")
 
     code = body.code if body.code is not None else existing["code"]
+    # Reject changing the code to one already used by a *different* unit
+    # (case-insensitive). Without this, the DB unique constraint raises a raw
+    # 500 instead of a clean 409.
+    if code is not None and code.lower() != str(existing["code"]).lower():
+        code_exists = await db.fetchval(
+            "SELECT COUNT(*) FROM unit_tambang WHERE code ILIKE $1 AND id <> $2::uuid",
+            code,
+            unit_id,
+        )
+        if code_exists and code_exists > 0:
+            raise ConflictError("Kode unit sudah terdaftar")
+
     jenis_id = (
         body.jenis_alat_berat_id
         if body.jenis_alat_berat_id is not None
