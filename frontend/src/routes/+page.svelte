@@ -27,6 +27,14 @@
 	function animateStats() {
 		if (statsAnimated) return;
 		statsAnimated = true;
+		// Hormati prefers-reduced-motion: langsung tampilkan nilai final.
+		const reduce =
+			typeof window.matchMedia === 'function' &&
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (reduce) {
+			statDisplay = stats.map((s) => s.target);
+			return;
+		}
 		stats.forEach((s, i) => {
 			const start = performance.now();
 			const dur = 1400;
@@ -40,14 +48,12 @@
 		});
 	}
 
-	function updateNavContrast() {
-		if (typeof window === 'undefined' || !navEl) return;
+	// Elemen gelap untuk deteksi kontras nav (di-cache, bukan query tiap scroll).
+	let darkEls: HTMLElement[] = [];
+
+	function computeNavContrast() {
+		if (!navEl) return;
 		const probeY = navEl.getBoundingClientRect().height / 2;
-		const darkEls = [
-			document.querySelector('header.hero-bg'),
-			document.getElementById('solusi'),
-			document.querySelector('footer.section-dark')
-		].filter(Boolean) as HTMLElement[];
 		let onDark = false;
 		for (const el of darkEls) {
 			const r = el.getBoundingClientRect();
@@ -59,29 +65,55 @@
 		navOnDark = onDark;
 	}
 
+	let contrastRaf = 0;
+	function scheduleNavContrast() {
+		if (contrastRaf) return;
+		contrastRaf = requestAnimationFrame(() => {
+			contrastRaf = 0;
+			computeNavContrast();
+		});
+	}
+
+	let moveRaf = 0;
+	let moveX = 0;
+	let moveY = 0;
 	function onMove(e: MouseEvent) {
-		const cx = window.innerWidth / 2;
-		const cy = window.innerHeight / 2;
-		const dx = (e.clientX - cx) / cx;
-		const dy = (e.clientY - cy) / cy;
-		if (shape1) shape1.style.transform = `translate(${dx * 30}px, ${dy * 30}px)`;
-		if (shape2) shape2.style.transform = `translate(${dx * -25}px, ${dy * -25}px)`;
-		if (shape3) shape3.style.transform = `translate(${dx * 40}px, ${dy * 40}px)`;
+		// Hormati prefers-reduced-motion & lewati saat di layar kecil (shape disembunyikan).
+		if (reduceMotion || window.innerWidth < 768) return;
+		moveX = e.clientX;
+		moveY = e.clientY;
+		if (moveRaf) return;
+		moveRaf = requestAnimationFrame(() => {
+			moveRaf = 0;
+			const cx = window.innerWidth / 2;
+			const cy = window.innerHeight / 2;
+			const dx = (moveX - cx) / cx;
+			const dy = (moveY - cy) / cy;
+			if (shape1) shape1.style.transform = `translate(${dx * 30}px, ${dy * 30}px)`;
+			if (shape2) shape2.style.transform = `translate(${dx * -25}px, ${dy * -25}px)`;
+			if (shape3) shape3.style.transform = `translate(${dx * 40}px, ${dy * 40}px)`;
+		});
 	}
 
 	let statsObs: IntersectionObserver | null = null;
-	let contrastTimers: ReturnType<typeof setTimeout>[] = [];
+	let reduceMotion = false;
 
 	onMount(() => {
 		auth.init();
 		theme.init();
 		isMounted = true;
+		reduceMotion =
+			typeof window.matchMedia === 'function' &&
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		darkEls = [
+			document.querySelector('header.hero-bg'),
+			document.getElementById('solusi'),
+			document.querySelector('footer.section-dark')
+		].filter(Boolean) as HTMLElement[];
 		window.addEventListener('mousemove', onMove);
-		window.addEventListener('scroll', updateNavContrast, { passive: true });
-		window.addEventListener('resize', updateNavContrast);
-		updateNavContrast();
-		requestAnimationFrame(updateNavContrast);
-		contrastTimers.push(setTimeout(updateNavContrast, 300));
+		window.addEventListener('scroll', scheduleNavContrast, { passive: true });
+		window.addEventListener('resize', scheduleNavContrast);
+		computeNavContrast();
 
 		if (statsSection && 'IntersectionObserver' in window) {
 			statsObs = new IntersectionObserver(
@@ -104,11 +136,12 @@
 	onDestroy(() => {
 		if (typeof window === 'undefined') return;
 		window.removeEventListener('mousemove', onMove);
-		window.removeEventListener('scroll', updateNavContrast);
-		window.removeEventListener('resize', updateNavContrast);
+		window.removeEventListener('scroll', scheduleNavContrast);
+		window.removeEventListener('resize', scheduleNavContrast);
 		statsObs?.disconnect();
-		contrastTimers.forEach((t) => clearTimeout(t));
 		statRafs.forEach((r) => cancelAnimationFrame(r));
+		if (contrastRaf) cancelAnimationFrame(contrastRaf);
+		if (moveRaf) cancelAnimationFrame(moveRaf);
 	});
 
 	function logout() {

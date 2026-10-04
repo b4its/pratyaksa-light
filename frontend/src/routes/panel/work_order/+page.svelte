@@ -3,8 +3,9 @@
 	import { page as pageStore } from '$app/state';
 	import { api } from '$lib/api';
 	import { createMap } from '$lib/fleet-map';
-	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
+	import { chartTheme, invalidateChartTheme } from '$lib/chart-theme';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 
 	interface WoItem {
 		id: string;
@@ -447,18 +448,6 @@
 	}
 
 	// --- charts ---
-	function css(v: string) {
-		if (typeof window === 'undefined') return '';
-		return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-	}
-	function chartTheme() {
-		return {
-			tick: css('--text-muted') || '#5d6b7a',
-			grid: css('--border') || '#d7dde4',
-			axis: css('--border-strong') || '#c2cad3',
-			text: css('--text') || '#1b2128'
-		};
-	}
 	function upsertChart(key: string, canvasId: string, config: any) {
 		const el = document.getElementById(canvasId) as HTMLCanvasElement | null;
 		if (!el || !ChartLib) return;
@@ -662,6 +651,7 @@
 
 	$effect(() => {
 		const dark = theme.isDark;
+		invalidateChartTheme();
 		tick().then(() => {
 			if (ChartLib) renderAll();
 			document
@@ -682,15 +672,7 @@
 <svelte:head><title>Work Order — Pratyaksa</title></svelte:head>
 <svelte:window onkeydown={onKeydown} />
 
-<header class="flex justify-between items-start mb-8 flex-wrap gap-4">
-	<div>
-		<h1 class="font-display text-4xl md:text-5xl font-bold uppercase tracking-wide leading-none">Work Order</h1>
-		<p class="mt-2 text-[color:var(--text-muted)]">Estimasi perbaikan unit CRITICAL, WARNING &amp; RUSAK — dipicu dari alert Telegram.</p>
-	</div>
-	<div class="flex items-center gap-3">
-		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span></div>
-	</div>
-</header>
+<PageHeader title="Work Order" subtitle="Estimasi perbaikan unit CRITICAL, WARNING & RUSAK — dipicu dari alert Telegram." {lastUpdate} />
 
 {#if error}<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold">⚠️ {error}</div>{/if}
 {#if woToast}
@@ -884,8 +866,9 @@
 
 <!-- ===== MODAL DETAIL WORK ORDER (create) ===== -->
 {#if modalOpen && modalItem}
-	<div class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:rgba(12,16,20,0.6);backdrop-filter:blur(3px);" role="presentation">
-		<div class="modal-card w-full flex flex-col max-h-[90vh] anim-pop" style="max-width:56rem;">
+	<div class="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
+		<div class="modal-backdrop" onclick={closeModal} role="presentation"></div>
+		<div class="modal-card relative z-10 w-full flex flex-col max-h-[90vh]" style="max-width:56rem;" role="dialog" aria-modal="true" aria-label={`Buat Work Order ${modalItem.code}`}>
 			<div class="flex items-start justify-between gap-4 p-6 border-b border-[color:var(--border)]">
 				<div>
 					<p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)]">{modalItem.woId} · Detail Lengkap</p>
@@ -901,7 +884,7 @@
 				</div>
 			</div>
 
-			<div class="p-6 overflow-y-auto" style="max-height:calc(90vh - 110px);">
+			<div class="p-6 overflow-y-auto">
 				<!-- Progress ring -->
 				<div class="panel-flat p-6 mb-6">
 					<div class="flex flex-col md:flex-row items-center gap-6">
@@ -997,8 +980,9 @@
 
 <!-- ===== MODAL DETAIL WORK ORDER TERSIMPAN ===== -->
 {#if woDetailOpen}
-	<div class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:rgba(12,16,20,0.6);backdrop-filter:blur(3px);" role="presentation">
-		<div class="modal-card w-full flex flex-col max-h-[90vh] anim-pop" style="max-width:56rem;">
+	<div class="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
+		<div class="modal-backdrop" onclick={closeWoDetail} role="presentation"></div>
+		<div class="modal-card relative z-10 w-full flex flex-col max-h-[90vh]" style="max-width:56rem;" role="dialog" aria-modal="true" aria-label="Detail Work Order Tersimpan">
 			<div class="flex items-start justify-between gap-4 p-6 border-b border-[color:var(--border)]">
 				<div>
 					<p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)]">Detail Work Order Tersimpan</p>
@@ -1012,7 +996,7 @@
 				</div>
 			</div>
 
-			<div class="p-6 overflow-y-auto" style="max-height:calc(90vh - 110px);">
+			<div class="p-6 overflow-y-auto">
 				{#if woDetailLoading}
 					<div class="py-12 text-center text-[color:var(--text-muted)] uppercase tracking-widest text-sm">Memuat detail…</div>
 				{:else if woDetail?.work_order}

@@ -5,6 +5,9 @@
 	import { resolveModel } from '$lib/models';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
+	import { chartTheme, invalidateChartTheme } from '$lib/chart-theme';
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 
 	let isLoading = $state(true);
 	let error = $state('');
@@ -59,19 +62,6 @@
 					: 'Tunggu suku cadang dari supplier utama.';
 	}
 
-	function css(v: string) {
-		if (typeof window === 'undefined') return '';
-		return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-	}
-	function chartTheme() {
-		return {
-			tick: css('--text-muted') || '#5d6b7a',
-			grid: css('--border') || '#d7dde4',
-			axis: css('--border-strong') || '#c2cad3',
-			surface: css('--surface') || '#ffffff',
-			text: css('--text') || '#1b2128'
-		};
-	}
 
 	async function loadDashboard() {
 		const res: any = await api.getDashboardStats();
@@ -218,17 +208,15 @@
 		if (chart) chart.destroy();
 	});
 
-	// Tutup dialog teratas dengan tombol Escape.
+	// Fullscreen map bukan <Modal>; modal lain menangani Escape sendiri.
 	function onKeydown(e: KeyboardEvent) {
-		if (e.key !== 'Escape') return;
-		if (mapFullscreen) closeMapFullscreen();
-		else if (monthDetail) closeMonthDetail();
-		else if (reportOpen) reportOpen = false;
+		if (e.key === 'Escape' && mapFullscreen) closeMapFullscreen();
 	}
 
 	// Recolor chart & map when the theme toggles.
 	$effect(() => {
 		const dark = theme.isDark;
+		invalidateChartTheme();
 		tick().then(() => {
 			applyMapTheme(dark);
 			if (!chart) return;
@@ -251,15 +239,7 @@
 <svelte:head><title>Dashboard — Pratyaksa</title></svelte:head>
 <svelte:window onkeydown={onKeydown} />
 
-<header class="flex justify-between items-start mb-8 gap-4 flex-wrap">
-	<div>
-		<h1 class="font-display text-4xl md:text-5xl font-bold uppercase tracking-wide leading-none">Dashboard</h1>
-		<p class="mt-2 text-[color:var(--text-muted)]">Ringkasan data analitik armada secara menyeluruh.</p>
-	</div>
-	<div class="flex items-center gap-3 flex-wrap">
-		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span></div>
-	</div>
-</header>
+<PageHeader title="Dashboard" subtitle="Ringkasan data analitik armada secara menyeluruh." {lastUpdate} />
 
 {#if error}<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold flex items-center gap-2">⚠️ {error}</div>{/if}
 
@@ -441,8 +421,8 @@
 						<div class="flex items-center justify-between mt-3 pt-3 border-t border-[color:var(--border)]">
 							<span class="text-[11px] font-medium text-[color:var(--text-faint)]">Hal {unitPage} / {unitTotalPages} · {units.length} unit</span>
 							<div class="flex gap-1.5">
-								<button class="mini-pg" disabled={unitPage === 1} onclick={() => (unitPage = Math.max(1, unitPage - 1))}>‹</button>
-								<button class="mini-pg" disabled={unitPage === unitTotalPages} onclick={() => (unitPage = Math.min(unitTotalPages, unitPage + 1))}>›</button>
+								<button class="mini-pg" aria-label="Halaman sebelumnya" disabled={unitPage === 1} onclick={() => (unitPage = Math.max(1, unitPage - 1))}>‹</button>
+								<button class="mini-pg" aria-label="Halaman berikutnya" disabled={unitPage === unitTotalPages} onclick={() => (unitPage = Math.min(unitTotalPages, unitPage + 1))}>›</button>
 							</div>
 						</div>
 					{/if}
@@ -485,87 +465,73 @@
 
 <!-- Report Modal -->
 {#if reportOpen}
-	<div class="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
-		<div class="modal-backdrop" onclick={() => (reportOpen = false)} role="presentation"></div>
-		<div class="modal-card w-full max-w-3xl flex flex-col max-h-[90vh] anim-pop">
-			<div class="flex justify-between items-center px-6 py-4 bg-steel-gradient text-white">
-				<h3 class="font-display text-2xl font-bold uppercase tracking-wide text-amber">Detail Laporan Analitik</h3>
-				<button class="w-9 h-9 rounded-lg bg-white/10 hover:bg-critical text-white flex items-center justify-center transition-colors" onclick={() => (reportOpen = false)}>✕</button>
+	<Modal title="Detail Laporan Analitik" maxWidth="3xl" zIndex={100} onclose={() => (reportOpen = false)} bodyClass="bg-[color:var(--surface-2)]">
+		<div class="p-6">
+			<h4 class="font-display text-xl font-bold uppercase tracking-wide mb-4">Ringkasan Eksekutif</h4>
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-7">
+				<div class="panel p-4">
+					<p class="label">Rata-rata Kesehatan Armada</p>
+					<p class="font-display text-3xl font-bold mt-1">{avgHealth}<span class="text-lg font-normal text-[color:var(--text-muted)]">%</span> <span class="text-sm font-normal text-[color:var(--text-muted)]">dari {dashboardKPI.totalUnits} unit</span></p>
+				</div>
+				<div class="panel p-4">
+					<p class="label">Ketersediaan Fisik (PA)</p>
+					<p class="font-display text-3xl font-bold text-healthy mt-1">{fleetAvailability}<span class="text-lg font-normal text-[color:var(--text-muted)]">%</span> <span class="text-sm font-normal text-[color:var(--text-muted)]">{dashboardKPI.activeUnits}/{dashboardKPI.totalUnits} unit sehat</span></p>
+				</div>
 			</div>
-			<div class="p-6 overflow-y-auto bg-[color:var(--surface-2)]">
-				<h4 class="font-display text-xl font-bold uppercase tracking-wide mb-4">Ringkasan Eksekutif</h4>
-				<div class="grid grid-cols-2 gap-4 mb-7">
-					<div class="panel p-4">
-						<p class="label">Rata-rata Kesehatan Armada</p>
-						<p class="font-display text-3xl font-bold mt-1">{avgHealth}<span class="text-lg font-normal text-[color:var(--text-muted)]">%</span> <span class="text-sm font-normal text-[color:var(--text-muted)]">dari {dashboardKPI.totalUnits} unit</span></p>
-					</div>
-					<div class="panel p-4">
-						<p class="label">Ketersediaan Fisik (PA)</p>
-						<p class="font-display text-3xl font-bold text-healthy mt-1">{fleetAvailability}<span class="text-lg font-normal text-[color:var(--text-muted)]">%</span> <span class="text-sm font-normal text-[color:var(--text-muted)]">{dashboardKPI.activeUnits}/{dashboardKPI.totalUnits} unit sehat</span></p>
-					</div>
+			<h4 class="font-display text-lg font-bold uppercase tracking-wide mb-4">Breakdown Status Armada</h4>
+			<div class="panel overflow-hidden">
+				<div class="overflow-x-auto">
+					<table class="table-industrial">
+						<thead>
+							<tr><th>Kategori Status</th><th>Persentase</th><th>Aksi Lanjutan Rekomendasi</th></tr>
+						</thead>
+						<tbody>
+							{#each statusDistribution as item, index (index)}
+								<tr>
+									<td><span class="badge text-white" style="background-color:{item.color};border-color:{item.color}">{item.label}</span></td>
+									<td class="font-mono font-bold text-lg">{item.jumlah}/{dashboardKPI.totalUnits}</td>
+									<td class="text-sm text-[color:var(--text-muted)]">{recommend(item.label)}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
-				<h4 class="font-display text-lg font-bold uppercase tracking-wide mb-4">Breakdown Status Armada</h4>
-				<div class="panel overflow-hidden">
-					<div class="overflow-x-auto">
-						<table class="table-industrial">
-							<thead>
-								<tr><th>Kategori Status</th><th>Persentase</th><th>Aksi Lanjutan Rekomendasi</th></tr>
-							</thead>
-							<tbody>
-								{#each statusDistribution as item, index (index)}
-									<tr>
-										<td><span class="badge text-white" style="background-color:{item.color};border-color:{item.color}">{item.label}</span></td>
-										<td class="font-mono font-bold text-lg">{item.jumlah}/{dashboardKPI.totalUnits}</td>
-										<td class="text-sm text-[color:var(--text-muted)]">{recommend(item.label)}</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
-				<div class="mt-7 flex justify-end">
-					<button class="btn btn-amber px-6" onclick={() => (reportOpen = false)}>Tutup / Unduh PDF</button>
-				</div>
+			</div>
+			<div class="mt-7 flex justify-end">
+				<button class="btn btn-amber px-6" onclick={() => (reportOpen = false)}>Tutup</button>
 			</div>
 		</div>
-	</div>
+	</Modal>
 {/if}
 
 <!-- Month Detail Modal -->
 {#if monthDetail}
-	<div class="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
-		<div class="modal-backdrop" onclick={closeMonthDetail} role="presentation"></div>
-		<div class="modal-card w-full max-w-4xl flex flex-col max-h-[90vh] anim-pop">
-			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
-				<h3 class="font-display text-2xl font-bold uppercase tracking-wide">Detail Unit Bulan {monthDetail.month}</h3>
-				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={closeMonthDetail}>✕</button>
-			</div>
-			<div class="p-6 overflow-y-auto flex flex-col gap-4">
-				{#each [{ k: 'sehat', label: 'Sehat', color: '#1FA971' }, { k: 'warning', label: 'Warning', color: '#E0A106' }, { k: 'critical', label: 'Critical', color: '#E0413E' }] as item (item.k)}
-					<div class="panel p-4 border-l-4" style="border-left-color:{item.color}">
-						<div class="flex items-center justify-between mb-2">
-							<span class="badge text-white" style="background:{item.color};border-color:{item.color}">{item.label} ({monthDetail[item.k].val}%)</span>
-							<span class="text-xs font-semibold" style="color:{item.color}">{monthDetail[item.k].units.length} Armada</span>
-						</div>
-						<p class="text-[color:var(--text-muted)] leading-relaxed text-sm">{monthDetail[item.k].units.length > 0 ? monthDetail[item.k].units.join(', ') : 'Tidak ada unit dalam kategori ini.'}</p>
+	<Modal title={`Detail Unit Bulan ${monthDetail.month}`} maxWidth="4xl" zIndex={100} onclose={closeMonthDetail}>
+		<div class="p-6 flex flex-col gap-4">
+			{#each [{ k: 'sehat', label: 'Sehat', color: '#1FA971' }, { k: 'warning', label: 'Warning', color: '#E0A106' }, { k: 'critical', label: 'Critical', color: '#E0413E' }] as item (item.k)}
+				<div class="panel p-4 border-l-4" style="border-left-color:{item.color}">
+					<div class="flex items-center justify-between mb-2 gap-2 flex-wrap">
+						<span class="badge text-white" style="background:{item.color};border-color:{item.color}">{item.label} ({monthDetail[item.k].val}%)</span>
+						<span class="text-xs font-semibold" style="color:{item.color}">{monthDetail[item.k].units.length} Armada</span>
 					</div>
-				{/each}
-			</div>
+					<p class="text-[color:var(--text-muted)] leading-relaxed text-sm">{monthDetail[item.k].units.length > 0 ? monthDetail[item.k].units.join(', ') : 'Tidak ada unit dalam kategori ini.'}</p>
+				</div>
+			{/each}
 		</div>
-	</div>
+	</Modal>
 {/if}
 
 <!-- Fullscreen Map Modal -->
 {#if mapFullscreen}
 	<div class="fixed inset-0 z-[120] flex flex-col p-4 md:p-6" role="presentation">
 		<div class="modal-backdrop" onclick={closeMapFullscreen} role="presentation"></div>
-		<div class="modal-card relative z-10 flex flex-col flex-1 w-full max-w-[1500px] mx-auto overflow-hidden">
+		<div class="modal-card relative z-10 flex flex-col flex-1 w-full max-w-[1500px] mx-auto overflow-hidden" role="dialog" aria-modal="true" aria-label="Peta Sebaran Unit (layar penuh)">
 			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
 				<div>
 					<h3 class="font-display text-2xl font-bold uppercase tracking-wide">Peta Sebaran Unit</h3>
 					<p class="text-xs text-[color:var(--text-muted)]">{mapLocations.length} unit · koordinat real-time</p>
 				</div>
-				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={closeMapFullscreen}>✕</button>
+				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" aria-label="Tutup" onclick={closeMapFullscreen}>✕</button>
 			</div>
 			<div class="relative flex-1">
 				<div id="mining-map-full" class="absolute inset-0 bg-[color:var(--surface-3)]"></div>

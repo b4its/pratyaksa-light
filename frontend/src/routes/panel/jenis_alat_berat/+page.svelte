@@ -3,6 +3,8 @@
 	import { api } from '$lib/api';
 	import { toast } from '$lib/stores/toast.svelte';
 	import { confirmDialog } from '$lib/stores/confirm.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 
 	let items = $state<any[]>([]);
 	let loading = $state(true);
@@ -133,27 +135,11 @@
 	onMount(() => {
 		load();
 	});
-
-	// Tutup dialog teratas dengan tombol Escape.
-	function onKeydown(e: KeyboardEvent) {
-		if (e.key !== 'Escape') return;
-		if (modalOpen) modalOpen = false;
-		else if (detailOpen) detailOpen = false;
-	}
 </script>
 
 <svelte:head><title>Jenis Alat Berat — Pratyaksa</title></svelte:head>
-<svelte:window onkeydown={onKeydown} />
 
-<header class="flex justify-between items-start mb-8 gap-4 flex-wrap">
-	<div>
-		<h1 class="font-display text-4xl md:text-5xl font-bold uppercase tracking-wide leading-none">Jenis Alat Berat</h1>
-		<p class="mt-2 text-[color:var(--text-muted)]">Daftar kategori alat berat yang terdaftar di sistem.</p>
-	</div>
-	<div class="flex items-center gap-3 flex-wrap">
-		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span></div>
-	</div>
-</header>
+<PageHeader title="Jenis Alat Berat" subtitle="Daftar kategori alat berat yang terdaftar di sistem." {lastUpdate} />
 
 {#if error}<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold flex items-center gap-2">⚠️ {error}</div>{/if}
 
@@ -208,13 +194,13 @@
 		<span class="text-sm text-[color:var(--text-muted)] font-medium">Total: <span class="font-mono font-semibold">{total}</span> jenis</span>
 		{#if totalPages > 1}
 			<div class="flex gap-1.5">
-				<button class="mini-pg" disabled={page === 1} onclick={() => { page = 1; load(); }}>«</button>
-				<button class="mini-pg" disabled={page === 1} onclick={() => { page--; load(); }}>‹</button>
+				<button class="mini-pg" aria-label="Halaman pertama" disabled={page === 1} onclick={() => { page = 1; load(); }}>«</button>
+				<button class="mini-pg" aria-label="Halaman sebelumnya" disabled={page === 1} onclick={() => { page--; load(); }}>‹</button>
 				{#each pageNumbers as p (p)}
-					<button class="mini-pg" class:!bg-amber={p === page} class:!border-amber={p === page} class:!text-graphite-900={p === page} onclick={() => { page = p; load(); }}>{p}</button>
+					<button class="mini-pg" aria-label={`Halaman ${p}`} aria-current={p === page ? 'page' : undefined} class:!bg-amber={p === page} class:!border-amber={p === page} class:!text-graphite-900={p === page} onclick={() => { page = p; load(); }}>{p}</button>
 				{/each}
-				<button class="mini-pg" disabled={page === totalPages} onclick={() => { page++; load(); }}>›</button>
-				<button class="mini-pg" disabled={page === totalPages} onclick={() => { page = totalPages; load(); }}>»</button>
+				<button class="mini-pg" aria-label="Halaman berikutnya" disabled={page === totalPages} onclick={() => { page++; load(); }}>›</button>
+				<button class="mini-pg" aria-label="Halaman terakhir" disabled={page === totalPages} onclick={() => { page = totalPages; load(); }}>»</button>
 			</div>
 		{/if}
 	</div>
@@ -222,49 +208,35 @@
 
 <!-- Detail Modal -->
 {#if detailOpen && selectedItem}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
-		<div class="modal-backdrop" onclick={() => (detailOpen = false)} role="presentation"></div>
-		<div class="modal-card w-full max-w-lg anim-pop">
-			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
-				<h3 class="font-display text-2xl font-bold uppercase tracking-wide">Detail Jenis Alat Berat</h3>
-				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={() => (detailOpen = false)}>✕</button>
-			</div>
-			<div class="p-6 space-y-4">
-				<div class="panel-flat p-4"><p class="label">Nama Jenis</p><p class="text-xl font-semibold">{selectedItem.nama}</p></div>
-				<div class="panel-flat p-4"><p class="label">Deskripsi</p><p class="leading-relaxed text-[color:var(--text-muted)]">{selectedItem.deskripsi || 'Tidak ada deskripsi.'}</p></div>
-				<div class="grid grid-cols-2 gap-4">
-					<div class="panel-flat p-4"><p class="label">Dibuat</p><p class="font-semibold text-sm font-mono">{formatDate(selectedItem.created_at)}</p></div>
-					<div class="panel-flat p-4"><p class="label">Diperbarui</p><p class="font-semibold text-sm font-mono">{formatDate(selectedItem.updated_at)}</p></div>
-				</div>
+	<Modal title="Detail Jenis Alat Berat" maxWidth="lg" onclose={() => (detailOpen = false)}>
+		<div class="p-6 space-y-4">
+			<div class="panel-flat p-4"><p class="label">Nama Jenis</p><p class="text-xl font-semibold">{selectedItem.nama}</p></div>
+			<div class="panel-flat p-4"><p class="label">Deskripsi</p><p class="leading-relaxed text-[color:var(--text-muted)]">{selectedItem.deskripsi || 'Tidak ada deskripsi.'}</p></div>
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+				<div class="panel-flat p-4"><p class="label">Dibuat</p><p class="font-semibold text-sm font-mono">{formatDate(selectedItem.created_at)}</p></div>
+				<div class="panel-flat p-4"><p class="label">Diperbarui</p><p class="font-semibold text-sm font-mono">{formatDate(selectedItem.updated_at)}</p></div>
 			</div>
 		</div>
-	</div>
+	</Modal>
 {/if}
 
 <!-- Form Modal -->
 {#if modalOpen}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
-		<div class="modal-backdrop" onclick={() => (modalOpen = false)} role="presentation"></div>
-		<div class="modal-card w-full max-w-lg flex flex-col anim-pop">
-			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
-				<h3 class="font-display text-2xl font-bold uppercase tracking-wide">{editing ? 'Edit Jenis' : 'Tambah Jenis'}</h3>
-				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={() => (modalOpen = false)}>✕</button>
+	<Modal title={editing ? 'Edit Jenis' : 'Tambah Jenis'} maxWidth="lg" onclose={() => (modalOpen = false)}>
+		<div class="p-6 flex flex-col gap-4">
+			{#if formError}<div class="px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical font-semibold text-sm">{formError}</div>{/if}
+			<div>
+				<label class="label" for="j-nama">Nama Jenis <span class="text-critical">*</span></label>
+				<input id="j-nama" bind:value={form.nama} type="text" placeholder="Cth: Caterpillar Excavator 320" class="field" maxlength="200" />
 			</div>
-			<div class="p-6 flex flex-col gap-4">
-				{#if formError}<div class="px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical font-semibold text-sm">{formError}</div>{/if}
-				<div>
-					<label class="label" for="j-nama">Nama Jenis <span class="text-critical">*</span></label>
-					<input id="j-nama" bind:value={form.nama} type="text" placeholder="Cth: Caterpillar Excavator 320" class="field" maxlength="200" />
-				</div>
-				<div>
-					<label class="label" for="j-desk">Deskripsi</label>
-					<textarea id="j-desk" bind:value={form.deskripsi} rows="3" placeholder="Deskripsi singkat tentang jenis alat berat ini..." class="field" style="resize:none;"></textarea>
-				</div>
-			</div>
-			<div class="px-6 py-4 border-t border-[color:var(--border)] bg-[color:var(--surface-2)] flex justify-end gap-3">
-				<button class="btn btn-ghost px-6" onclick={() => (modalOpen = false)}>Batal</button>
-				<button class="btn btn-amber px-6 disabled:opacity-60" onclick={save} disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan'}</button>
+			<div>
+				<label class="label" for="j-desk">Deskripsi</label>
+				<textarea id="j-desk" bind:value={form.deskripsi} rows="3" placeholder="Deskripsi singkat tentang jenis alat berat ini..." class="field"></textarea>
 			</div>
 		</div>
-	</div>
+		<div class="px-6 py-4 border-t border-[color:var(--border)] bg-[color:var(--surface-2)] flex justify-end gap-3">
+			<button class="btn btn-ghost px-6" onclick={() => (modalOpen = false)}>Batal</button>
+			<button class="btn btn-amber px-6 disabled:opacity-60" onclick={save} disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan'}</button>
+		</div>
+	</Modal>
 {/if}

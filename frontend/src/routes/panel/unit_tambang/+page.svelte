@@ -6,6 +6,8 @@
 	import { theme } from '$lib/stores/theme.svelte';
 	import { toast } from '$lib/stores/toast.svelte';
 	import { confirmDialog } from '$lib/stores/confirm.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 
 	const perPage = 5;
 
@@ -343,13 +345,10 @@
 		if (sensorFullMap) sensorFullMap.remove();
 	});
 
-	// Tutup dialog teratas dengan tombol Escape.
+	// Fullscreen map bukan <Modal>, jadi Escape-nya ditangani di sini.
+	// Modal lain menangani Escape/fokus sendiri.
 	function onKeydown(e: KeyboardEvent) {
-		if (e.key !== 'Escape') return;
-		if (isMapFullscreen) closeMapFullscreen();
-		else if (isExportOpen) isExportOpen = false;
-		else if (isFormOpen) isFormOpen = false;
-		else if (isDetailOpen) isDetailOpen = false;
+		if (e.key === 'Escape' && isMapFullscreen) closeMapFullscreen();
 	}
 
 	$effect(() => {
@@ -363,15 +362,7 @@
 <svelte:head><title>Unit Tambang — Pratyaksa</title></svelte:head>
 <svelte:window onkeydown={onKeydown} />
 
-<header class="flex justify-between items-start mb-8 gap-4 flex-wrap">
-	<div>
-		<h1 class="font-display text-4xl md:text-5xl font-bold uppercase tracking-wide leading-none">Unit Tambang</h1>
-		<p class="mt-2 text-[color:var(--text-muted)]">Unit yang beroperasi saat ini dan masih aktif berjalan.</p>
-	</div>
-	<div class="flex items-center gap-3 flex-wrap">
-		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span></div>
-	</div>
-</header>
+<PageHeader title="Unit Tambang" subtitle="Unit yang beroperasi saat ini dan masih aktif berjalan." {lastUpdate} />
 
 {#if error}
 	<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold flex items-center gap-2">⚠️ {error}</div>
@@ -492,66 +483,53 @@
 
 <!-- Detail Modal -->
 {#if isDetailOpen && selectedUnit}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
-		<div class="modal-backdrop" onclick={() => (isDetailOpen = false)} role="presentation"></div>
-		<div class="modal-card w-full max-w-2xl flex flex-col max-h-[90vh] anim-pop">
-			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
-				<h3 class="font-display text-2xl font-bold uppercase tracking-wide">Detail Unit</h3>
-				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={() => (isDetailOpen = false)}>✕</button>
-			</div>
-			<div class="p-6 overflow-y-auto">
-				<div class="flex flex-col md:flex-row gap-6 mb-6">
-					<div class="w-full md:w-1/2 rounded-xl border border-[color:var(--border)] bg-steel-gradient flex items-center justify-center relative overflow-hidden" style="min-height:200px;">
-						<model-viewer
-							src={resolveModel(selectedUnit.model3d_url, selectedUnit.jenis_alat_berat_nama)}
-							alt="Model 3D unit alat berat"
-							camera-controls
-							auto-rotate
-							auto-rotate-delay="0"
-							rotation-per-second="35deg"
-							shadow-intensity="1.4"
-							exposure="1.1"
-							environment-image="neutral"
-							interaction-prompt="none"
-							style="width:100%;height:100%;min-height:200px;outline:none;background-color:transparent;"
-						></model-viewer>
-						<div class="absolute top-2 left-2 bg-steel/90 text-white text-[9px] font-semibold px-2 py-0.5 rounded-full pointer-events-none">● LIVE 3D</div>
-						<div class="absolute bottom-2 right-2 bg-graphite-900/80 text-graphite-100 text-[9px] font-medium px-2 py-0.5 rounded-full pointer-events-none">DRAG 360°</div>
-					</div>
-					<div class="w-full md:w-1/2 flex flex-col gap-4 justify-center">
-						<div><p class="label">Kode Unik</p><p class="text-2xl font-mono font-bold">{selectedUnit.code}</p></div>
-						<div><p class="label">Jenis Alat Berat</p><p class="text-lg font-semibold">{selectedUnit.jenis_alat_berat_nama || '—'}</p></div>
-						<div><span class="badge text-white" style="background-color:{statusHex(selectedUnit.status)};border-color:{statusHex(selectedUnit.status)}">Status: {selectedUnit.status}</span></div>
-					</div>
+	<Modal title="Detail Unit" maxWidth="2xl" onclose={() => (isDetailOpen = false)}>
+		<div class="p-6">
+			<div class="flex flex-col md:flex-row gap-6 mb-6">
+				<div class="w-full md:w-1/2 rounded-xl border border-[color:var(--border)] bg-steel-gradient flex items-center justify-center relative overflow-hidden" style="min-height:200px;">
+					<model-viewer
+						src={resolveModel(selectedUnit.model3d_url, selectedUnit.jenis_alat_berat_nama)}
+						alt="Model 3D unit alat berat"
+						camera-controls
+						auto-rotate
+						auto-rotate-delay="0"
+						rotation-per-second="35deg"
+						shadow-intensity="1.4"
+						exposure="1.1"
+						environment-image="neutral"
+						interaction-prompt="none"
+						style="width:100%;height:100%;min-height:200px;outline:none;background-color:transparent;"
+					></model-viewer>
+					<div class="absolute top-2 left-2 bg-steel/90 text-white text-[9px] font-semibold px-2 py-0.5 rounded-full pointer-events-none">● LIVE 3D</div>
+					<div class="absolute bottom-2 right-2 bg-graphite-900/80 text-graphite-100 text-[9px] font-medium px-2 py-0.5 rounded-full pointer-events-none">DRAG 360°</div>
 				</div>
-				<div class="grid grid-cols-3 gap-4 border-t border-[color:var(--border)] pt-6">
-					<div class="panel-flat p-4 text-center"><p class="label">Health Score</p><p class="text-3xl font-display font-bold" style="color:{statusHex(selectedUnit.status)}">{selectedUnit.health}%</p></div>
-					<div class="panel-flat p-4 text-center"><p class="label">Jadwal MTC</p><p class="text-base font-semibold mt-1 leading-tight">{selectedUnit.maintenance}</p></div>
-					<div class="p-4 text-center rounded-[10px] bg-steel-gradient text-white border border-[color:var(--border)]">
-						<p class="text-[10px] font-semibold uppercase tracking-wider text-graphite-300 mb-1">Est. Saving</p>
-						<p class="text-xl font-mono font-bold {savingsTone(selectedUnit.savings) === 'pos' ? 'text-amber' : 'text-critical'}">{fmtSavings(selectedUnit.savings)}</p>
-					</div>
+				<div class="w-full md:w-1/2 flex flex-col gap-4 justify-center">
+					<div><p class="label">Kode Unik</p><p class="text-2xl font-mono font-bold">{selectedUnit.code}</p></div>
+					<div><p class="label">Jenis Alat Berat</p><p class="text-lg font-semibold">{selectedUnit.jenis_alat_berat_nama || '—'}</p></div>
+					<div><span class="badge text-white" style="background-color:{statusHex(selectedUnit.status)};border-color:{statusHex(selectedUnit.status)}">Status: {selectedUnit.status}</span></div>
+				</div>
+			</div>
+			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-[color:var(--border)] pt-6">
+				<div class="panel-flat p-4 text-center"><p class="label">Health Score</p><p class="text-3xl font-display font-bold" style="color:{statusHex(selectedUnit.status)}">{selectedUnit.health}%</p></div>
+				<div class="panel-flat p-4 text-center"><p class="label">Jadwal MTC</p><p class="text-base font-semibold mt-1 leading-tight">{selectedUnit.maintenance}</p></div>
+				<div class="p-4 text-center rounded-[10px] bg-steel-gradient text-white border border-[color:var(--border)]">
+					<p class="text-[10px] font-semibold uppercase tracking-wider text-graphite-300 mb-1">Est. Saving</p>
+					<p class="text-xl font-mono font-bold {savingsTone(selectedUnit.savings) === 'pos' ? 'text-amber' : 'text-critical'}">{fmtSavings(selectedUnit.savings)}</p>
 				</div>
 			</div>
 		</div>
-	</div>
+	</Modal>
 {/if}
 
 <!-- Form Modal -->
 {#if isFormOpen}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
-		<div class="modal-backdrop" onclick={() => (isFormOpen = false)} role="presentation"></div>
-		<div class="modal-card w-full max-w-lg flex flex-col max-h-[90vh] anim-pop">
-			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
-				<h3 class="font-display text-2xl font-bold uppercase tracking-wide">{formMode === 'add' ? 'Tambah Unit' : 'Edit Unit'}</h3>
-				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={() => (isFormOpen = false)}>✕</button>
+	<Modal title={formMode === 'add' ? 'Tambah Unit' : 'Edit Unit'} maxWidth="lg" onclose={() => (isFormOpen = false)}>
+		<div class="p-6 flex flex-col gap-4">
+			{#if formError}<div class="px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical font-semibold text-sm">{formError}</div>{/if}
+			<div>
+				<label class="label" for="f-code">Kode Unik <span class="text-critical">*</span></label>
+				<input id="f-code" bind:value={formData.code} type="text" placeholder="Cth: EXC-320-05" class="field" maxlength="50" data-autofocus />
 			</div>
-			<div class="p-6 overflow-y-auto flex flex-col gap-4">
-				{#if formError}<div class="px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical font-semibold text-sm">{formError}</div>{/if}
-				<div>
-					<label class="label" for="f-code">Kode Unik <span class="text-critical">*</span></label>
-					<input id="f-code" bind:value={formData.code} type="text" placeholder="Cth: EXC-320-05" class="field" maxlength="50" />
-				</div>
 				<div>
 					<label class="label" for="f-jenis">Jenis Alat Berat <span class="text-critical">*</span></label>
 					<select id="f-jenis" bind:value={formData.jenis_alat_berat_id} class="field cursor-pointer">
@@ -620,23 +598,20 @@
 					{/if}
 				</div>
 			</div>
-			<div class="px-6 py-4 border-t border-[color:var(--border)] bg-[color:var(--surface-2)] flex justify-end gap-3">
-				<button class="btn btn-ghost px-6" onclick={() => (isFormOpen = false)}>Batal</button>
-				<button class="btn btn-amber px-6 disabled:opacity-60" onclick={save} disabled={formLoading}>{formLoading ? 'Menyimpan…' : 'Simpan'}</button>
-			</div>
+		<div class="px-6 py-4 border-t border-[color:var(--border)] bg-[color:var(--surface-2)] flex justify-end gap-3">
+			<button class="btn btn-ghost px-6" onclick={() => (isFormOpen = false)}>Batal</button>
+			<button class="btn btn-amber px-6 disabled:opacity-60" onclick={save} disabled={formLoading}>{formLoading ? 'Menyimpan…' : 'Simpan'}</button>
 		</div>
-	</div>
+	</Modal>
 {/if}
 
 <!-- Export Modal -->
 {#if isExportOpen}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
-		<div class="modal-backdrop" onclick={() => (isExportOpen = false)} role="presentation"></div>
-		<div class="modal-card w-full max-w-md p-8 text-center anim-pop">
+	<Modal title="Ekspor Data" maxWidth="md" onclose={() => (isExportOpen = false)}>
+		<div class="p-8 text-center">
 			<div class="w-14 h-14 rounded-2xl bg-amber/15 border border-amber/40 flex items-center justify-center mx-auto mb-4 text-amber">
 				<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" /></svg>
 			</div>
-			<h3 class="font-display text-2xl font-bold uppercase tracking-wide mb-2">Ekspor Data</h3>
 			<p class="text-[color:var(--text-muted)] mb-6">Pilih format file untuk mengunduh data unit tambang.</p>
 			<button class="btn btn-ghost w-full !py-4 justify-between" onclick={exportCSV}>
 				<span class="font-semibold">Ekspor sebagai CSV</span>
@@ -644,20 +619,20 @@
 			</button>
 			<button class="mt-5 text-sm font-semibold text-[color:var(--text-muted)] hover:text-amber transition-colors" onclick={() => (isExportOpen = false)}>Tutup</button>
 		</div>
-	</div>
+	</Modal>
 {/if}
 
 <!-- Fullscreen Map Modal -->
 {#if isMapFullscreen}
 	<div class="fixed inset-0 z-[120] flex flex-col p-4 md:p-6" role="presentation">
 		<div class="modal-backdrop" onclick={closeMapFullscreen} role="presentation"></div>
-		<div class="modal-card relative z-10 flex flex-col flex-1 w-full max-w-[1500px] mx-auto overflow-hidden">
+		<div class="modal-card relative z-10 flex flex-col flex-1 w-full max-w-[1500px] mx-auto overflow-hidden" role="dialog" aria-modal="true" aria-label="Peta Sebaran Sensor (layar penuh)">
 			<div class="flex justify-between items-center px-6 py-4 border-b border-[color:var(--border)] bg-[color:var(--surface-2)]">
 				<div>
 					<h3 class="font-display text-2xl font-bold uppercase tracking-wide">Peta Sebaran Sensor</h3>
 					<p class="text-xs text-[color:var(--text-muted)]">{mapUnitCount} unit · koordinat real-time</p>
 				</div>
-				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" onclick={closeMapFullscreen}>✕</button>
+				<button class="w-9 h-9 rounded-lg hover:bg-critical/15 hover:text-critical text-[color:var(--text-muted)] flex items-center justify-center transition-colors" aria-label="Tutup" onclick={closeMapFullscreen}>✕</button>
 			</div>
 			<div class="relative flex-1">
 				<div id="sensor-map-full" class="absolute inset-0 bg-[color:var(--surface-3)]"></div>

@@ -3,6 +3,8 @@
 	import { api } from '$lib/api';
 	import { resolveModel } from '$lib/models';
 	import { theme } from '$lib/stores/theme.svelte';
+	import { chartTheme, invalidateChartTheme } from '$lib/chart-theme';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 
 	let overview = $state<any>(null);
 	let analysis = $state<any>(null);
@@ -280,15 +282,6 @@
 		if (typeof window === 'undefined') return '';
 		return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 	}
-	function themePalette() {
-		return {
-			tick: css('--text-muted') || '#5d6b7a',
-			grid: css('--border') || '#d7dde4',
-			axis: css('--border-strong') || '#c2cad3',
-			surface: css('--surface') || '#ffffff',
-			text: css('--text') || '#1b2128'
-		};
-	}
 	const labelFont = { family: 'Inter', weight: 'bold' as const };
 	const monoFont = { family: 'JetBrains Mono' };
 
@@ -372,7 +365,7 @@
 
 	function renderOverviewCharts() {
 		if (!overview) return;
-		const t = themePalette();
+		const t = chartTheme();
 		const sd = overview.status_distribution;
 		upsertChart('statusPie', 'statusPie', {
 			type: 'doughnut',
@@ -439,7 +432,7 @@
 
 	function renderUnitCharts() {
 		if (!analysis) return;
-		const t = themePalette();
+		const t = chartTheme();
 
 		const rs = analysis.risk_score;
 		upsertChart('riskGauge', 'riskGauge', {
@@ -658,6 +651,7 @@
 	// Re-render charts when theme toggles.
 	$effect(() => {
 		theme.isDark;
+		invalidateChartTheme();
 		tick().then(() => {
 			if (ChartLib) renderAllCharts();
 		});
@@ -671,37 +665,28 @@
 
 <svelte:head><title>Analisa Kerusakan — Pratyaksa</title></svelte:head>
 
-<header class="flex justify-between items-start mb-8 flex-wrap gap-4">
-	<div>
-		<h1 class="font-display text-4xl md:text-5xl font-bold uppercase tracking-wide leading-none">Analisa Kerusakan</h1>
-		<p class="mt-2 text-[color:var(--text-muted)]">Monitoring kondisi &amp; prediksi kegagalan armada secara real-time.</p>
-	</div>
-	<div class="flex items-center gap-3">
-		<button
-			class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all {autoAlert ? 'border-healthy/40 bg-healthy/10 text-healthy' : 'border-[color:var(--border)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-2)]'}"
-			role="switch"
-			aria-checked={autoAlert}
-			title="Kirim alert otomatis ke Telegram untuk unit CRITICAL/WARNING"
-			onclick={() => (autoAlert = !autoAlert)}
+<PageHeader title="Analisa Kerusakan" subtitle="Monitoring kondisi & prediksi kegagalan armada secara real-time." {lastUpdate}>
+	<button
+		class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all {autoAlert ? 'border-healthy/40 bg-healthy/10 text-healthy' : 'border-[color:var(--border)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-2)]'}"
+		role="switch"
+		aria-checked={autoAlert}
+		title="Kirim alert otomatis ke Telegram untuk unit CRITICAL/WARNING"
+		onclick={() => (autoAlert = !autoAlert)}
+	>
+		<span class="w-2 h-2 rounded-full {autoAlert ? 'bg-healthy' : 'bg-[color:var(--text-faint)]'}"></span>
+		Auto Alert {autoAlert ? 'ON' : 'OFF'}
+	</button>
+	<button
+		class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-[color:var(--border)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-2)] transition-all disabled:opacity-60"
+		disabled={alertTesting}
+		onclick={testTelegram}
+	>
+		<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
+			><path stroke-linecap="round" stroke-linejoin="round" d="M8.29 6.293a9 9 0 1111.418 11.418M12 2a10 10 0 019.95 9M2 12h2m2-6-2-2m14 14l2 2M12 20v2m-4-2l-2 2" /></svg
 		>
-			<span class="w-2 h-2 rounded-full {autoAlert ? 'bg-healthy' : 'bg-[color:var(--text-faint)]'}"></span>
-			Auto Alert {autoAlert ? 'ON' : 'OFF'}
-		</button>
-		<button
-			class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-[color:var(--border)] text-[color:var(--text-muted)] hover:bg-[color:var(--surface-2)] transition-all disabled:opacity-60"
-			disabled={alertTesting}
-			onclick={testTelegram}
-		>
-			<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
-				><path stroke-linecap="round" stroke-linejoin="round" d="M8.29 6.293a9 9 0 1111.418 11.418M12 2a10 10 0 019.95 9M2 12h2m2-6-2-2m14 14l2 2M12 20v2m-4-2l-2 2" /></svg
-			>
-			{alertTesting ? 'Mengirim…' : 'Test Telegram'}
-		</button>
-		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">
-			Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span>
-		</div>
-	</div>
-</header>
+		{alertTesting ? 'Mengirim…' : 'Test Telegram'}
+	</button>
+</PageHeader>
 
 {#if alertStatus}
 	<div
@@ -761,8 +746,8 @@
 				<div class="flex items-center justify-between mt-3 pt-3 border-t border-[color:var(--border)]">
 					<span class="text-[11px] font-medium text-[color:var(--text-faint)]">Hal {unitListPage} / {unitListTotalPages}</span>
 					<div class="flex gap-1.5">
-						<button class="mini-pg" disabled={unitListPage === 1} onclick={() => (unitListPage = Math.max(1, unitListPage - 1))}>‹</button>
-						<button class="mini-pg" disabled={unitListPage === unitListTotalPages} onclick={() => (unitListPage = Math.min(unitListTotalPages, unitListPage + 1))}>›</button>
+						<button class="mini-pg" aria-label="Halaman sebelumnya" disabled={unitListPage === 1} onclick={() => (unitListPage = Math.max(1, unitListPage - 1))}>‹</button>
+						<button class="mini-pg" aria-label="Halaman berikutnya" disabled={unitListPage === unitListTotalPages} onclick={() => (unitListPage = Math.min(unitListTotalPages, unitListPage + 1))}>›</button>
 					</div>
 				</div>
 			{/if}
@@ -901,7 +886,7 @@
 
 					<!-- Engineer generated -->
 					<p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-faint)] mb-2">🧮 Engineer Generated Features</p>
-					<div class="grid grid-cols-3 gap-3">
+					<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
 						<div class="rounded-[10px] p-3 text-center text-white" style="background:#3E92CC"><p class="text-[9px] font-semibold uppercase tracking-wider text-white/80">Delta Eng Temp</p><p class="text-xl font-display font-bold">{analysis.telemetry.delta_eng_temp}°C</p></div>
 						<div class="rounded-[10px] p-3 text-center text-white" style="background-color:{statusLabelColor(analysis.telemetry.status_label)}"><p class="text-[9px] font-semibold uppercase tracking-wider text-white/80">Status Label</p><p class="text-xl font-display font-bold">{analysis.telemetry.status_label}</p></div>
 						<div class="rounded-[10px] p-3 text-center bg-steel-gradient text-white"><p class="text-[9px] font-semibold uppercase tracking-wider text-graphite-300">RUL (Telemetri)</p><p class="text-xl font-display font-bold text-amber">{fmtHours(analysis.telemetry.rul_hours)}</p></div>
@@ -955,7 +940,7 @@
 					<div style="height:288px;"><canvas id="rulComponents"></canvas></div>
 
 					<p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-faint)] mt-5 mb-2">Digital Twin (Physics-based)</p>
-					<div class="grid grid-cols-3 gap-3">
+					<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
 						{#each digitalTwins as d (d.label)}
 							<div class="cell"><p class="cell-label">{d.label}</p><p class="cell-val text-lg" style="color:{rulTone(d.hours)}">{d.hours} <span class="text-xs font-normal">jam</span></p></div>
 						{/each}
