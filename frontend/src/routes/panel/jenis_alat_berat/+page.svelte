@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
-	import { auth } from '$lib/stores/auth.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
 
 	let items = $state<any[]>([]);
 	let loading = $state(true);
@@ -11,6 +12,7 @@
 	let totalPages = $state(1);
 	let search = $state('');
 	let error = $state('');
+	let lastUpdate = $state('');
 
 	let modalOpen = $state(false);
 	let editing = $state<any>(null);
@@ -49,6 +51,7 @@
 			items = res.data.data;
 			total = res.data.total;
 			totalPages = res.data.total_pages || 1;
+			lastUpdate = new Date().toLocaleTimeString('id-ID');
 		} catch (e: any) {
 			error = e?.message || 'Gagal memuat data.';
 		} finally {
@@ -101,6 +104,7 @@
 			}
 			modalOpen = false;
 			await load();
+			toast.success(editing ? 'Jenis alat berat berhasil diperbarui.' : 'Jenis alat berat berhasil ditambahkan.');
 		} catch (e: any) {
 			formError = e?.message || 'Gagal menyimpan.';
 		} finally {
@@ -109,14 +113,20 @@
 	}
 
 	async function remove(item: any) {
-		if (!confirm(`Hapus "${item.nama}"?`)) return;
+		const ok = await confirmDialog.ask({
+			title: 'Hapus Jenis',
+			message: `Hapus "${item.nama}"? Tindakan ini tidak dapat dibatalkan.`,
+			confirmLabel: 'Hapus'
+		});
+		if (!ok) return;
 		try {
 			await api.deleteJenisAlatBerat(item.id);
 			// Jika halaman terakhir menjadi kosong setelah hapus, mundur satu halaman.
 			if (page > 1 && items.length === 1) page -= 1;
 			await load();
+			toast.success('Jenis alat berat berhasil dihapus.');
 		} catch (e: any) {
-			alert(e?.message || 'Gagal menghapus.');
+			toast.error(e?.message || 'Gagal menghapus.');
 		}
 	}
 
@@ -141,10 +151,7 @@
 		<p class="mt-2 text-[color:var(--text-muted)]">Daftar kategori alat berat yang terdaftar di sistem.</p>
 	</div>
 	<div class="flex items-center gap-3 flex-wrap">
-		<div class="flex items-center gap-3 panel-flat px-3 py-2">
-			<div class="w-8 h-8 rounded-full bg-steel-gradient flex items-center justify-center text-white font-bold text-xs">{(auth.user?.name || 'A').charAt(0).toUpperCase()}</div>
-			<span class="font-semibold text-sm">{auth.user?.name || 'Admin'}</span>
-		</div>
+		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span></div>
 	</div>
 </header>
 

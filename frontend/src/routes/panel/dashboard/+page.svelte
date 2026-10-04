@@ -8,6 +8,7 @@
 
 	let isLoading = $state(true);
 	let error = $state('');
+	let lastUpdate = $state('');
 	let dashboardKPI = $state({ totalUnits: 0, activeUnits: 0, criticalUnits: 0, totalSavings: 0 });
 	let statusDistribution = $state<{ label: string; jumlah: number; color: string }[]>([]);
 	let monthlyFleetData = $state<any[]>([]);
@@ -88,6 +89,7 @@
 		}));
 		monthlyFleetData = data.monthly_fleet_data;
 		mapLocations = data.map_locations;
+		lastUpdate = new Date().toLocaleTimeString('id-ID');
 	}
 
 	async function loadUnits() {
@@ -255,10 +257,7 @@
 		<p class="mt-2 text-[color:var(--text-muted)]">Ringkasan data analitik armada secara menyeluruh.</p>
 	</div>
 	<div class="flex items-center gap-3 flex-wrap">
-		<div class="flex items-center gap-3 panel-flat px-3 py-2">
-			<div class="w-8 h-8 rounded-full bg-steel-gradient flex items-center justify-center text-white font-bold text-xs">{(auth.user?.name || 'A').charAt(0).toUpperCase()}</div>
-			<span class="font-semibold text-sm">{auth.user?.name || 'Admin'}</span>
-		</div>
+		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span></div>
 	</div>
 </header>
 

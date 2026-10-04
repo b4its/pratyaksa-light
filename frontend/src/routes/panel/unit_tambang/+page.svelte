@@ -3,8 +3,9 @@
 	import { api } from '$lib/api';
 	import { createMap } from '$lib/fleet-map';
 	import { resolveModel, modelForType } from '$lib/models';
-	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
 
 	const perPage = 5;
 
@@ -15,6 +16,7 @@
 	let filterStatus = $state('');
 	let isLoading = $state(false);
 	let error = $state('');
+	let lastUpdate = $state('');
 	let jenisOptions = $state<{ id: string; nama: string }[]>([]);
 	const statusOptions = ['SEHAT', 'WARNING', 'CRITICAL', 'RUSAK'];
 
@@ -79,6 +81,7 @@
 			});
 			units = res.data.data;
 			total = res.data.total;
+			lastUpdate = new Date().toLocaleTimeString('id-ID');
 		} catch (e: any) {
 			error = e?.message || 'Gagal memuat data unit.';
 		} finally {
@@ -256,6 +259,7 @@
 			isFormOpen = false;
 			await fetchUnits();
 			await loadSensorMap();
+			toast.success(formMode === 'add' ? 'Unit berhasil ditambahkan.' : 'Unit berhasil diperbarui.');
 		} catch (e: any) {
 			formError = e?.message || 'Gagal menyimpan.';
 		} finally {
@@ -264,15 +268,21 @@
 	}
 
 	async function remove(unit: any) {
-		if (!confirm(`Hapus unit "${unit.code}"?`)) return;
+		const ok = await confirmDialog.ask({
+			title: 'Hapus Unit',
+			message: `Hapus unit "${unit.code}"? Tindakan ini tidak dapat dibatalkan.`,
+			confirmLabel: 'Hapus'
+		});
+		if (!ok) return;
 		try {
 			await api.deleteUnitTambang(unit.id);
 			// Jika halaman terakhir menjadi kosong setelah hapus, mundur satu halaman.
 			if (currentPage > 1 && units.length === 1) currentPage -= 1;
 			await fetchUnits();
 			await loadSensorMap();
+			toast.success(`Unit ${unit.code} berhasil dihapus.`);
 		} catch (e: any) {
-			alert(e?.message || 'Gagal menghapus.');
+			toast.error(e?.message || 'Gagal menghapus.');
 		}
 	}
 
@@ -359,10 +369,7 @@
 		<p class="mt-2 text-[color:var(--text-muted)]">Unit yang beroperasi saat ini dan masih aktif berjalan.</p>
 	</div>
 	<div class="flex items-center gap-3 flex-wrap">
-		<div class="flex items-center gap-3 panel-flat px-3 py-2">
-			<div class="w-8 h-8 rounded-full bg-steel-gradient flex items-center justify-center text-white font-bold text-xs">{(auth.user?.name || 'A').charAt(0).toUpperCase()}</div>
-			<span class="font-semibold text-sm">{auth.user?.name || 'Admin'}</span>
-		</div>
+		<div class="panel-flat px-3 py-2 text-[10px] font-mono text-[color:var(--text-muted)]">Update<br /><span class="font-semibold text-[color:var(--text)]">{lastUpdate || '—'}</span></div>
 	</div>
 </header>
 

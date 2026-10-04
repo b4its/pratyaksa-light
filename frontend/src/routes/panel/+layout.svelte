@@ -4,6 +4,8 @@
 	import { page } from '$app/state';
 	import { fly, fade } from 'svelte/transition';
 	import PanelSidebar from '$lib/components/PanelSidebar.svelte';
+	import Toast from '$lib/components/Toast.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 
 	let { children } = $props();
@@ -27,6 +29,8 @@
 			{/key}
 		</main>
 	</div>
+	<Toast />
+	<ConfirmDialog />
 {:else}
 	<div class="flex items-center justify-center h-screen text-[color:var(--text-muted)] font-semibold uppercase tracking-widest">
 		Memeriksa sesi…

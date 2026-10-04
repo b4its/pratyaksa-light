@@ -9,6 +9,7 @@
 	let isLoading = $state(false);
 	let showPassword = $state(false);
 	let errorMessage = $state('');
+	let showResetHint = $state(false);
 
 	onMount(() => auth.init());
 
@@ -58,7 +59,7 @@
 						<button
 							type="button"
 							class="text-xs font-semibold text-steel hover:text-amber transition-colors"
-							onclick={() => alert('Hubungi administrator untuk reset kata sandi.')}
+							onclick={() => (showResetHint = !showResetHint)}
 						>Lupa sandi?</button>
 					</div>
 					<div class="relative">
@@ -85,6 +86,13 @@
 						</button>
 					</div>
 				</div>
+
+				{#if showResetHint}
+					<div class="flex items-center gap-2 px-4 py-3 rounded-lg bg-steel/10 border border-steel/40 text-[color:var(--text-muted)]">
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
+						<span class="font-semibold text-sm">Hubungi administrator untuk reset kata sandi.</span>
+					</div>
+				{/if}
 
 				{#if errorMessage}
 					<div class="flex items-center gap-2 px-4 py-3 rounded-lg bg-critical/10 border border-critical/40 text-critical">
