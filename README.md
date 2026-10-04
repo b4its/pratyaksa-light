@@ -130,10 +130,10 @@ py-pratyaksa/
 │   ├── src/
 │   │   ├── lib/
 │   │   │   ├── api.ts              # API layer (paritas useApi)
-│   │   │   ├── stores/             # auth, theme, pratyaksa (runes)
+│   │   │   ├── stores/             # auth, theme (runes)
 │   │   │   ├── fleet-map.ts        # Leaflet builder
 │   │   │   ├── models.ts           # jenis → .glb resolver
-│   │   │   └── components/         # AppLogo, PanelSidebar, ModeSelector, ModeLockTabel
+│   │   │   └── components/         # AppLogo, PanelSidebar
 │   │   └── routes/                 # /, /account/*, /panel/*, /wo/create/[asset]
 │   ├── static/                     # assets, media/models (.glb)
 │   ├── package.json
@@ -167,7 +167,7 @@ tersedia di bawah `/api/v1/svc/*` agar konsisten dengan base URL frontend.
 | POST | `/auth/register` | – | Registrasi user |
 | POST | `/auth/login` | – | Login → JWT |
 | GET | `/auth/me` | ✔ | Info user saat ini |
-| GET | `/dashboard` | ✔ | Statistik dashboard (mode-aware) |
+| GET | `/dashboard` | ✔ | Statistik dashboard (simulasi) |
 | GET/POST | `/jenis-alat-berat` | ✔ | List / create jenis alat berat |
 | GET/PUT/DELETE | `/jenis-alat-berat/{id}` | ✔ | Detail / update / delete |
 | GET/POST | `/unit-tambang` | ✔ | List / create unit tambang |

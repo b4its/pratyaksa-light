@@ -26,8 +26,7 @@ class PratyaksaState:
     mode: PratyaksaMode = PratyaksaMode.SIMULASI
     fleet_data: list[FleetAsset] = field(default_factory=list)
     health_status: Optional[HealthResponse] = None
-    last_health_check: Optional[float] = None
-    last_fleet_poll: Optional[float] = None
+    generated_at: Optional[float] = None
 
 
 class SharedPratyaksaState:

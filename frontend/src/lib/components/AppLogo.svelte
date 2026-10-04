@@ -6,9 +6,11 @@
 	class="pratyaksa-logo-wrap"
 	class:force-on-dark={onDark}
 	style="height:{height}"
+	role="img"
+	aria-label="PRATYAKSA"
 >
-	<img src="/assets/pratyaksa_logo.png" alt="PRATYAKSA" class="pratyaksa-logo logo-light" style="height:{height}" draggable="false" />
-	<img src="/assets/pratyaksa_logo_dark.png" alt="PRATYAKSA" class="pratyaksa-logo logo-dark" style="height:{height}" draggable="false" aria-hidden="true" />
+	<img src="/assets/pratyaksa_logo.png" alt="" class="pratyaksa-logo logo-light" style="height:{height}" draggable="false" />
+	<img src="/assets/pratyaksa_logo_dark.png" alt="" class="pratyaksa-logo logo-dark" style="height:{height}" draggable="false" />
 </span>
 
 <style>

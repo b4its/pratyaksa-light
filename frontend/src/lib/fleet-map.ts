@@ -15,25 +15,41 @@ export interface FleetLocation {
 	last_update?: string;
 }
 
+/** Escape untrusted values before interpolating into marker/popup HTML. */
+function esc(v: unknown): string {
+	return String(v ?? '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
+/** Only allow a safe colour token (hex / rgb) to reach inline styles. */
+function safeColor(v?: string): string {
+	return typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v.trim()) ? v.trim() : '#7A848E';
+}
+
 function buildMarkerHtml(loc: FleetLocation): string {
+	const color = safeColor(loc.color_hex);
 	return `
-    <span class="fleet-pulse" style="background:${loc.color_hex}"></span>
-    <span class="fleet-dot" style="background:${loc.color_hex}"><b>${loc.level || '•'}</b></span>
-    <span class="fleet-label">${loc.unit}</span>`;
+    <span class="fleet-pulse" style="background:${color}"></span>
+    <span class="fleet-dot" style="background:${color}"><b>${esc(loc.level || '•')}</b></span>
+    <span class="fleet-label">${esc(loc.unit)}</span>`;
 }
 
 function row(label: string, val?: string | number): string {
 	return val === undefined || val === null || val === ''
 		? ''
-		: `<tr><td style="padding-bottom:5px;color:#5d6b7a;">${label}</td><td style="font-weight:700;text-align:right;">${val}</td></tr>`;
+		: `<tr><td style="padding-bottom:5px;color:#5d6b7a;">${esc(label)}</td><td style="font-weight:700;text-align:right;">${esc(val)}</td></tr>`;
 }
 
 function buildPopupHtml(loc: FleetLocation): string {
 	return `
     <div style="font-family:'Inter',sans-serif;min-width:220px;border-radius:12px;overflow:hidden;">
-      <div style="background-color:${loc.color_hex};color:#fff;padding:12px;">
-        <h4 style="font-weight:800;font-size:17px;margin:0;">${loc.unit}</h4>
-        <p style="margin:0;font-size:12px;opacity:.9;">${loc.unit_type || 'Heavy Equipment'}</p>
+      <div style="background-color:${safeColor(loc.color_hex)};color:#fff;padding:12px;">
+        <h4 style="font-weight:800;font-size:17px;margin:0;">${esc(loc.unit)}</h4>
+        <p style="margin:0;font-size:12px;opacity:.9;">${esc(loc.unit_type || 'Heavy Equipment')}</p>
       </div>
       <div style="padding:12px;background-color:#fff;">
         <table style="width:100%;font-size:12px;border-collapse:collapse;color:#1b2128;">
@@ -45,7 +61,7 @@ function buildPopupHtml(loc: FleetLocation): string {
           ${row('Fuel Level', loc.fuel)}
         </table>
         <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #d7dde4;font-size:10px;text-align:center;color:#5d6b7a;font-family:'JetBrains Mono',monospace;">
-          ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}${loc.last_update ? ' · <b>' + loc.last_update + '</b>' : ''}
+          ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}${loc.last_update ? ' · <b>' + esc(loc.last_update) + '</b>' : ''}
         </div>
       </div>
     </div>`;

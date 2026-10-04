@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.errors import BadRequestError
 from app.pratyaksa import simulator
-from app.pratyaksa.state import SharedPratyaksaState
+from app.pratyaksa.state import SharedPratyaksaState, now_epoch
 from app.schemas.pratyaksa import ModeSwitchRequest, PredictRequest
 
 router = APIRouter(prefix="/pratyaksa", tags=["pratyaksa"])
@@ -22,16 +22,28 @@ def _get_state(request: Request) -> SharedPratyaksaState:
     return request.app.state.pratyaksa
 
 
+async def _current_fleet(state: SharedPratyaksaState) -> tuple[list, float]:
+    """Regenerate the deterministic fleet snapshot and return (fleet, epoch).
+
+    The simulator is seeded per 5-minute time bucket, so regenerating on read
+    keeps the data fresh (never a stale startup snapshot) at negligible cost.
+    """
+    fleet = simulator.generate_fleet()
+    epoch = now_epoch()
+    await state.update(fleet_data=fleet, generated_at=epoch)
+    return fleet, epoch
+
+
 @router.get("/status")
 async def get_status(state: SharedPratyaksaState = Depends(_get_state)) -> dict:
     s = await state.read()
+    fleet, epoch = await _current_fleet(state)
     return {
         "status": "success",
         "data": {
             "mode": s.mode.value,
-            "fleet_count": len(s.fleet_data),
-            "last_health_check": _ago(s.last_health_check),
-            "last_fleet_poll": _ago(s.last_fleet_poll),
+            "fleet_count": len(fleet),
+            "generated_at": _ago(epoch),
         },
     }
 
@@ -39,12 +51,13 @@ async def get_status(state: SharedPratyaksaState = Depends(_get_state)) -> dict:
 @router.get("/fleet")
 async def get_fleet(state: SharedPratyaksaState = Depends(_get_state)) -> dict:
     s = await state.read()
+    fleet, _ = await _current_fleet(state)
     return {
         "status": "success",
         "data": {
             "mode": s.mode.value,
-            "fleet": [a.model_dump() for a in s.fleet_data],
-            "total": len(s.fleet_data),
+            "fleet": [a.model_dump() for a in fleet],
+            "total": len(fleet),
         },
     }
 
@@ -52,7 +65,7 @@ async def get_fleet(state: SharedPratyaksaState = Depends(_get_state)) -> dict:
 @router.get("/fleet/health")
 async def get_fleet_health(state: SharedPratyaksaState = Depends(_get_state)) -> dict:
     s = await state.read()
-    fleet = s.fleet_data
+    fleet, _ = await _current_fleet(state)
     normal = warning = critical = 0
     for asset in fleet:
         if asset.risk_level == "NORMAL":

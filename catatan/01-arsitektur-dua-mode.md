@@ -31,10 +31,11 @@ menyimpan:
 | `mode` | `PratyaksaMode` | Selalu `SIMULASI` |
 | `fleet_data` | `list[FleetAsset]` | Data fleet hasil simulasi |
 | `health_status` | `Optional[HealthResponse]` | Health simulasi |
-| `last_health_check` | `Optional[float]` | Epoch detik health check |
-| `last_fleet_poll` | `Optional[float]` | Epoch detik fleet poll |
+| `generated_at` | `Optional[float]` | Epoch detik snapshot fleet dibuat |
 
-Implementasi: `backend/app/pratyaksa/state.py`.
+Implementasi: `backend/app/pratyaksa/state.py`. Fleet di-generate ulang setiap
+`/pratyaksa/fleet|status|fleet/health` dibaca (simulator deterministik berbasis
+time-bucket), sehingga data selalu segar.
 
 ## Yang Dihapus
 

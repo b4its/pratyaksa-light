@@ -138,7 +138,7 @@
 		await Promise.all([fetchOverview(), fetchAnalysis()]);
 		await tick();
 		renderAllCharts();
-		await maybeSendAlert();
+		if (autoAlert) await maybeSendAlert();
 	}
 
 	async function selectUnit(id: string) {
@@ -642,6 +642,11 @@
 		tick().then(() => {
 			if (ChartLib) renderAllCharts();
 		});
+	});
+
+	// Jaga halaman daftar unit agar tidak melewati total halaman saat data menyusut.
+	$effect(() => {
+		if (unitListPage > unitListTotalPages) unitListPage = unitListTotalPages;
 	});
 </script>
 

@@ -26,7 +26,7 @@ from app.core.errors import (
 from app.db.mongo import MongoDb
 from app.db.postgres import PostgresDb
 from app.pratyaksa import SharedPratyaksaState
-from app.pratyaksa.simulator import generate_fleet
+from app.pratyaksa.simulator import generate_fleet, generate_health
 from app.pratyaksa.state import now_epoch
 
 logging.basicConfig(
@@ -73,8 +73,8 @@ async def lifespan(app: FastAPI):
     app.state.pratyaksa = SharedPratyaksaState()
     await app.state.pratyaksa.update(
         fleet_data=generate_fleet(),
-        last_fleet_poll=now_epoch(),
-        last_health_check=now_epoch(),
+        health_status=generate_health(),
+        generated_at=now_epoch(),
     )
     logger.info("🧪 Pratyaksa running in SIMULATION mode (no external API)")
 

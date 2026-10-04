@@ -54,14 +54,13 @@ telegram_bot_grpc/
 
 🟡 Mode       : simulasi
 📦 Fleet Count : 6 unit
-🩺 Health Check : 2s ago
-📡 Fleet Poll   : 2s ago
+🩺 Data dibuat : 2s ago
 ```
 
 ## Alur Sinkronisasi
 
-1. **Backend** menyediakan data simulasi deterministik via `/api/v1/pratyaksa/*`.
-2. **SharedPratyaksaState** menyimpan data fleet + timestamp.
+1. **Backend** menyediakan data simulasi deterministik via `/api/v1/pratyaksa/*`
+   (fleet di-generate ulang saat dibaca; berbasis time-bucket 5 menit).
+2. **SharedPratyaksaState** menyimpan snapshot fleet + `generated_at`.
 3. **Telegram Bot** query `/api/v1/pratyaksa/status` untuk cek mode.
-4. **Frontend** polling `/api/v1/pratyaksa/fleet` tiap 5 detik.
-5. Mode selalu **SIMULASI** — data dari engine Python internal.
+4. Mode selalu **SIMULASI** — data dari engine Python internal.

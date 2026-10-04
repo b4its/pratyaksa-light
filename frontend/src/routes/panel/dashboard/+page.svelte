@@ -34,6 +34,14 @@
 	const unitTotalPages = $derived(Math.max(1, Math.ceil(units.length / unitsPerPage)));
 	const pagedUnits = $derived(units.slice((unitPage - 1) * unitsPerPage, unitPage * unitsPerPage));
 
+	// Ringkasan nyata untuk laporan (dihitung dari data armada, bukan angka statis).
+	const avgHealth = $derived(
+		units.length ? Math.round(units.reduce((s, u) => s + (u.health || 0), 0) / units.length) : 0
+	);
+	const fleetAvailability = $derived(
+		dashboardKPI.totalUnits ? Math.round((dashboardKPI.activeUnits / dashboardKPI.totalUnits) * 1000) / 10 : 0
+	);
+
 	function statusHex(s: string) {
 		return (
 			{ SEHAT: '#1FA971', WARNING: '#E0A106', CRITICAL: '#E0413E', RUSAK: '#7A848E' }[s] ||
@@ -199,6 +207,14 @@
 		if (chart) chart.destroy();
 	});
 
+	// Tutup dialog teratas dengan tombol Escape.
+	function onKeydown(e: KeyboardEvent) {
+		if (e.key !== 'Escape') return;
+		if (mapFullscreen) closeMapFullscreen();
+		else if (monthDetail) closeMonthDetail();
+		else if (reportOpen) reportOpen = false;
+	}
+
 	// Recolor chart & map when the theme toggles.
 	$effect(() => {
 		const dark = theme.isDark;
@@ -222,6 +238,7 @@
 </script>
 
 <svelte:head><title>Dashboard — Pratyaksa</title></svelte:head>
+<svelte:window onkeydown={onKeydown} />
 
 <header class="flex justify-between items-start mb-8 gap-4 flex-wrap">
 	<div>
@@ -471,12 +488,12 @@
 				<h4 class="font-display text-xl font-bold uppercase tracking-wide mb-4">Ringkasan Eksekutif</h4>
 				<div class="grid grid-cols-2 gap-4 mb-7">
 					<div class="panel p-4">
-						<p class="label">Total Utilisasi Tahun Ini</p>
-						<p class="font-display text-3xl font-bold mt-1">3.455 <span class="text-sm font-normal text-[color:var(--text-muted)]">Jam Operasi</span></p>
+						<p class="label">Rata-rata Kesehatan Armada</p>
+						<p class="font-display text-3xl font-bold mt-1">{avgHealth}<span class="text-lg font-normal text-[color:var(--text-muted)]">%</span> <span class="text-sm font-normal text-[color:var(--text-muted)]">dari {dashboardKPI.totalUnits} unit</span></p>
 					</div>
 					<div class="panel p-4">
-						<p class="label">Proyeksi Cost Reduction</p>
-						<p class="font-display text-3xl font-bold text-healthy mt-1">12,5% <span class="text-sm font-normal text-[color:var(--text-muted)]">MOM</span></p>
+						<p class="label">Ketersediaan Fisik (PA)</p>
+						<p class="font-display text-3xl font-bold text-healthy mt-1">{fleetAvailability}<span class="text-lg font-normal text-[color:var(--text-muted)]">%</span> <span class="text-sm font-normal text-[color:var(--text-muted)]">{dashboardKPI.activeUnits}/{dashboardKPI.totalUnits} unit sehat</span></p>
 					</div>
 				</div>
 				<h4 class="font-display text-lg font-bold uppercase tracking-wide mb-4">Breakdown Status Armada</h4>

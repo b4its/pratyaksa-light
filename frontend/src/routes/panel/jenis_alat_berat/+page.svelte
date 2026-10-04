@@ -87,6 +87,10 @@
 			formError = 'Nama minimal 2 karakter.';
 			return;
 		}
+		if (form.nama.trim().length > 200) {
+			formError = 'Nama maksimal 200 karakter.';
+			return;
+		}
 		saving = true;
 		formError = '';
 		try {
@@ -108,6 +112,8 @@
 		if (!confirm(`Hapus "${item.nama}"?`)) return;
 		try {
 			await api.deleteJenisAlatBerat(item.id);
+			// Jika halaman terakhir menjadi kosong setelah hapus, mundur satu halaman.
+			if (page > 1 && items.length === 1) page -= 1;
 			await load();
 		} catch (e: any) {
 			alert(e?.message || 'Gagal menghapus.');
@@ -117,9 +123,17 @@
 	onMount(() => {
 		load();
 	});
+
+	// Tutup dialog teratas dengan tombol Escape.
+	function onKeydown(e: KeyboardEvent) {
+		if (e.key !== 'Escape') return;
+		if (modalOpen) modalOpen = false;
+		else if (detailOpen) detailOpen = false;
+	}
 </script>
 
 <svelte:head><title>Jenis Alat Berat — Pratyaksa</title></svelte:head>
+<svelte:window onkeydown={onKeydown} />
 
 <header class="flex justify-between items-start mb-8 gap-4 flex-wrap">
 	<div>
@@ -233,7 +247,7 @@
 				{#if formError}<div class="px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical font-semibold text-sm">{formError}</div>{/if}
 				<div>
 					<label class="label" for="j-nama">Nama Jenis <span class="text-critical">*</span></label>
-					<input id="j-nama" bind:value={form.nama} type="text" placeholder="Cth: Caterpillar Excavator 320" class="field" />
+					<input id="j-nama" bind:value={form.nama} type="text" placeholder="Cth: Caterpillar Excavator 320" class="field" maxlength="200" />
 				</div>
 				<div>
 					<label class="label" for="j-desk">Deskripsi</label>

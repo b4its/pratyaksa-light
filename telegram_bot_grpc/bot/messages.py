@@ -80,14 +80,12 @@ def build_fleet_summary(data: dict[str, Any]) -> str:
 def build_pratyaksa_status(data: dict[str, Any]) -> str:
     mode = data.get("mode", "simulasi")
     fleet = data.get("fleet_count", 0)
-    health = data.get("last_health_check") or "-"
-    poll = data.get("last_fleet_poll") or "-"
+    generated = data.get("generated_at") or "-"
     return (
         "🤖 <b>PRATYAKSA Status</b>\n\n"
         f"🟡 Mode       : <b>{mode}</b>\n"
         f"📦 Fleet Count : {fleet} unit\n"
-        f"🩺 Health Check : {health}\n"
-        f"📡 Fleet Poll   : {poll}\n\n"
+        f"🩺 Data dibuat : {generated}\n\n"
         "<i>Mode simulasi — data dihasilkan engine Python internal (tanpa koneksi eksternal).</i>"
     )
 

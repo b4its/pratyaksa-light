@@ -18,7 +18,10 @@ async def test_health_endpoint(client):
 async def test_pratyaksa_status_and_fleet(client):
     resp = await client.get("/api/v1/pratyaksa/status")
     assert resp.status_code == 200
-    assert resp.json()["data"]["mode"] == "simulasi"
+    data = resp.json()["data"]
+    assert data["mode"] == "simulasi"
+    assert data["fleet_count"] > 0
+    assert data["generated_at"].endswith("ago")
 
     fleet = await client.get("/api/v1/pratyaksa/fleet")
     assert fleet.status_code == 200

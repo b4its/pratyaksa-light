@@ -105,6 +105,8 @@
 html {
 	font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
 	scroll-behavior: smooth;
+	/* Offset for the sticky landing nav so #anchor targets aren't hidden. */
+	scroll-padding-top: 5rem;
 	-webkit-font-smoothing: antialiased;
 	background: var(--bg);
 	color: var(--text);
@@ -628,9 +630,8 @@ body {
 	overflow: hidden;
 }
 
-/* Dark-mode tile filter for Leaflet containers */
-#mining-map.map-dark .leaflet-tile-pane,
-#mining-map-full.map-dark .leaflet-tile-pane {
+/* Dark-mode tile filter for Leaflet containers (all map instances) */
+.leaflet-container.map-dark .leaflet-tile-pane {
 	filter: brightness(0.7) contrast(1.08) saturate(0.85) hue-rotate(6deg);
 }
 

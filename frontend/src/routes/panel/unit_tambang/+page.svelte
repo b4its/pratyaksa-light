@@ -205,6 +205,22 @@
 			formError = 'Jadwal maintenance wajib diisi.';
 			return;
 		}
+		const health = Number(formData.health);
+		if (!Number.isFinite(health) || health < 0 || health > 100) {
+			formError = 'Health harus berupa angka 0–100.';
+			return;
+		}
+		const savings = Number(formData.savings);
+		if (!Number.isFinite(savings)) {
+			formError = 'Estimasi savings harus berupa angka.';
+			return;
+		}
+		const lat = formData.lat !== '' && formData.lat != null ? Number(formData.lat) : undefined;
+		const lng = formData.lng !== '' && formData.lng != null ? Number(formData.lng) : undefined;
+		if ((lat !== undefined && !Number.isFinite(lat)) || (lng !== undefined && !Number.isFinite(lng))) {
+			formError = 'Koordinat Latitude/Longitude harus berupa angka valid.';
+			return;
+		}
 		formLoading = true;
 		formError = '';
 		try {
@@ -212,15 +228,13 @@
 				code: formData.code,
 				jenis_alat_berat_id: formData.jenis_alat_berat_id,
 				status: formData.status,
-				health: Number(formData.health),
+				health,
 				maintenance: formData.maintenance,
-				savings: Number(formData.savings),
+				savings,
 				img_url: formData.img_url || undefined,
 				model3d_url: formData.model3d_url || undefined,
-				lat:
-					formData.lat !== '' && formData.lat != null ? Number(formData.lat) : undefined,
-				lng:
-					formData.lng !== '' && formData.lng != null ? Number(formData.lng) : undefined
+				lat,
+				lng
 			};
 			if (formMode === 'add') {
 				await api.createUnitTambang(payload);
@@ -241,6 +255,8 @@
 		if (!confirm(`Hapus unit "${unit.code}"?`)) return;
 		try {
 			await api.deleteUnitTambang(unit.id);
+			// Jika halaman terakhir menjadi kosong setelah hapus, mundur satu halaman.
+			if (currentPage > 1 && units.length === 1) currentPage -= 1;
 			await fetchUnits();
 			await loadSensorMap();
 		} catch (e: any) {
@@ -305,6 +321,15 @@
 		if (sensorFullMap) sensorFullMap.remove();
 	});
 
+	// Tutup dialog teratas dengan tombol Escape.
+	function onKeydown(e: KeyboardEvent) {
+		if (e.key !== 'Escape') return;
+		if (isMapFullscreen) closeMapFullscreen();
+		else if (isExportOpen) isExportOpen = false;
+		else if (isFormOpen) isFormOpen = false;
+		else if (isDetailOpen) isDetailOpen = false;
+	}
+
 	$effect(() => {
 		const dark = theme.isDark;
 		tick().then(() => {
@@ -314,6 +339,7 @@
 </script>
 
 <svelte:head><title>Unit Tambang — Pratyaksa</title></svelte:head>
+<svelte:window onkeydown={onKeydown} />
 
 <header class="flex justify-between items-start mb-8 gap-4 flex-wrap">
 	<div>
@@ -505,7 +531,7 @@
 				{#if formError}<div class="px-4 py-2.5 rounded-lg bg-critical/10 border border-critical/40 text-critical font-semibold text-sm">{formError}</div>{/if}
 				<div>
 					<label class="label" for="f-code">Kode Unik <span class="text-critical">*</span></label>
-					<input id="f-code" bind:value={formData.code} type="text" placeholder="Cth: EXC-320-05" class="field" />
+					<input id="f-code" bind:value={formData.code} type="text" placeholder="Cth: EXC-320-05" class="field" maxlength="50" />
 				</div>
 				<div>
 					<label class="label" for="f-jenis">Jenis Alat Berat <span class="text-critical">*</span></label>
@@ -528,7 +554,7 @@
 				</div>
 				<div>
 					<label class="label" for="f-mtc">Jadwal Maintenance <span class="text-critical">*</span></label>
-					<input id="f-mtc" bind:value={formData.maintenance} type="text" placeholder="Cth: 50 Jam Lagi" class="field" />
+					<input id="f-mtc" bind:value={formData.maintenance} type="text" placeholder="Cth: 50 Jam Lagi" class="field" maxlength="200" />
 				</div>
 				<div>
 					<label class="label" for="f-savings">Est. Savings ($)</label>

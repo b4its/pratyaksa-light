@@ -312,6 +312,13 @@
 		try {
 			await api.updateWorkOrder(id, { wo_status });
 			await fetchWorkOrders();
+			// Menandai COMPLETED mengubah unit menjadi SEHAT → muat ulang daftar
+			// unit berisiko & chart agar konsisten tanpa menunggu auto-refresh.
+			if (wo_status === 'COMPLETED') {
+				await fetchData();
+				await tick();
+				renderAll();
+			}
 		} catch (e: any) {
 			showToast(false, e?.message || 'Gagal memperbarui status WO.');
 		}
@@ -612,6 +619,11 @@
 				await tick();
 				renderDetailCharts();
 				openModal(target);
+			} else {
+				showToast(
+					false,
+					`Unit ${assetQuery} tidak berstatus berisiko (CRITICAL/WARNING/RUSAK), jadi Work Order tidak dapat dibuat.`
+				);
 			}
 		}
 
@@ -635,6 +647,13 @@
 		Object.values(charts).forEach((c) => c?.destroy());
 	});
 
+	// Tutup dialog teratas dengan tombol Escape.
+	function onKeydown(e: KeyboardEvent) {
+		if (e.key !== 'Escape') return;
+		if (modalOpen) closeModal();
+		else if (woDetailOpen) closeWoDetail();
+	}
+
 	$effect(() => {
 		const dark = theme.isDark;
 		tick().then(() => {
@@ -655,6 +674,7 @@
 </script>
 
 <svelte:head><title>Work Order — Pratyaksa</title></svelte:head>
+<svelte:window onkeydown={onKeydown} />
 
 <header class="flex justify-between items-start mb-8 flex-wrap gap-4">
 	<div>
