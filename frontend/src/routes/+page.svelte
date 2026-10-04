@@ -150,6 +150,14 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Pratyaksa — Mining Intelligence Platform</title>
+	<meta
+		name="description"
+		content="Pratyaksa — predictive maintenance berbasis AI untuk armada alat berat tambang. Prediksi kerusakan, RUL, dan work order otomatis."
+	/>
+</svelte:head>
+
 <div class="min-h-screen text-[color:var(--text)] bg-[color:var(--bg)] selection:bg-amber selection:text-graphite-900 font-sans transition-colors duration-500 overflow-x-clip">
 	<!-- NAV -->
 	<nav

@@ -6,7 +6,7 @@
 	const asset = $derived(page.params.asset || '');
 
 	onMount(() => {
-		const query = asset ? `?asset=${asset}` : '';
+		const query = asset ? `?asset=${encodeURIComponent(asset)}` : '';
 		goto(`/panel/work_order${query}`, { replaceState: true });
 	});
 </script>

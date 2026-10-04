@@ -687,7 +687,7 @@
 		<div class="panel-flat p-5"><p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)] mb-1">Critical</p><p class="font-display text-4xl font-bold text-critical">{kpiCritical}</p></div>
 		<div class="panel-flat p-5"><p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)] mb-1">Warning</p><p class="font-display text-4xl font-bold text-warning">{kpiWarning}</p></div>
 		<div class="panel-flat p-5"><p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)] mb-1">Rusak</p><p class="font-display text-4xl font-bold text-rusak">{kpiRusak}</p></div>
-		<div class="panel-flat p-5"><p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)] mb-1">Rata-rata RUL</p><p class="font-display text-4xl font-bold text-steel">{kpiAvgRul}<span class="text-base font-semibold"> jam</span></p></div>
+		<div class="panel-flat p-5"><p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)] mb-1">Rata-rata RUL</p><p class="font-display text-4xl font-bold text-steel">{kpiAvgRul.toLocaleString('id-ID')}<span class="text-base font-semibold">&nbsp;jam</span></p></div>
 		<div class="panel-flat p-5"><p class="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-muted)] mb-1">Est. Biaya Total</p><p class="font-display text-3xl font-bold text-amber">{fmtRupiahShort(kpiTotalCost)}</p></div>
 	</div>
 

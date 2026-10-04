@@ -370,21 +370,21 @@
 
 <!-- Actions Bar -->
 <div class="flex justify-between items-center mb-6 gap-3 flex-wrap">
-	<div class="flex gap-3 flex-1 flex-wrap">
+	<form class="flex gap-3 flex-1 flex-wrap" onsubmit={(e) => { e.preventDefault(); onSearch(); }}>
 		<div class="relative flex-1" style="min-width:12rem;">
 			<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--text-faint)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-			<input bind:value={searchQuery} onkeyup={(e) => e.key === 'Enter' && onSearch()} type="text" placeholder="Cari kode / nama unit..." class="field !pl-9" />
+			<input bind:value={searchQuery} type="search" aria-label="Cari kode atau nama unit" placeholder="Cari kode / nama unit..." class="field !pl-9" />
 		</div>
-		<select bind:value={filterStatus} onchange={onSearch} class="field cursor-pointer" style="width:auto;">
+		<select bind:value={filterStatus} onchange={onSearch} aria-label="Filter status" class="field cursor-pointer" style="width:auto;">
 			<option value="">Semua Status</option>
 			{#each statusOptions as s (s)}<option value={s}>{s}</option>{/each}
 		</select>
-		<button class="btn btn-ghost px-6" onclick={onSearch}>Cari</button>
-		<button class="btn btn-dark px-5" onclick={() => (isExportOpen = true)}>
+		<button type="submit" class="btn btn-ghost px-6">Cari</button>
+		<button type="button" class="btn btn-dark px-5" onclick={() => (isExportOpen = true)}>
 			Ekspor
 			<svg class="w-4 h-4 text-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" /></svg>
 		</button>
-	</div>
+	</form>
 	<button class="btn btn-amber px-5" onclick={openAdd}>
 		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M12 5v14M5 12h14" /></svg>
 		Tambah Unit

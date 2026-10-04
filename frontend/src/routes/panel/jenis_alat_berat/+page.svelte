@@ -144,13 +144,13 @@
 {#if error}<div class="mb-6 px-4 py-3 rounded-xl bg-critical/10 border border-critical/40 text-critical font-semibold flex items-center gap-2">⚠️ {error}</div>{/if}
 
 <div class="flex justify-between items-center mb-6 gap-3 flex-wrap">
-	<div class="flex gap-3 flex-1 flex-wrap">
+	<form class="flex gap-3 flex-1 flex-wrap" onsubmit={(e) => { e.preventDefault(); onSearch(); }}>
 		<div class="relative flex-1" style="min-width:12rem;">
 			<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--text-faint)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-			<input bind:value={search} onkeyup={(e) => e.key === 'Enter' && onSearch()} type="text" placeholder="Cari jenis alat berat..." class="field !pl-9" />
+			<input bind:value={search} type="search" aria-label="Cari jenis alat berat" placeholder="Cari jenis alat berat..." class="field !pl-9" />
 		</div>
-		<button class="btn btn-ghost px-6" onclick={onSearch}>Cari</button>
-	</div>
+		<button type="submit" class="btn btn-ghost px-6">Cari</button>
+	</form>
 	<button class="btn btn-amber px-5" onclick={openCreate}>
 		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M12 5v14M5 12h14" /></svg>
 		Tambah Jenis
