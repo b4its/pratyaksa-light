@@ -22,6 +22,7 @@
 	];
 	let statDisplay = $state(stats.map(() => 0));
 	let statsAnimated = false;
+	let statRafs: number[] = [];
 
 	function animateStats() {
 		if (statsAnimated) return;
@@ -33,9 +34,9 @@
 				const t = Math.min((now - start) / dur, 1);
 				const eased = 1 - Math.pow(1 - t, 3);
 				statDisplay[i] = Math.round(s.target * eased);
-				if (t < 1) requestAnimationFrame(step);
+				if (t < 1) statRafs[i] = requestAnimationFrame(step);
 			};
-			requestAnimationFrame(step);
+			statRafs[i] = requestAnimationFrame(step);
 		});
 	}
 
@@ -107,6 +108,7 @@
 		window.removeEventListener('resize', updateNavContrast);
 		statsObs?.disconnect();
 		contrastTimers.forEach((t) => clearTimeout(t));
+		statRafs.forEach((r) => cancelAnimationFrame(r));
 	});
 
 	function logout() {
@@ -379,7 +381,7 @@
 	</section>
 
 	<!-- FOOTER -->
-	<footer class="py-14 px-6 md:px-20 bg-graphite-950 text-graphite-300">
+	<footer class="section-dark py-14 px-6 md:px-20 bg-graphite-950 text-graphite-300">
 		<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-8">
 			<div>
 				<AppLogo height="2rem" onDark={true} />

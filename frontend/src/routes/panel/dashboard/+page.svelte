@@ -169,13 +169,18 @@
 	}
 
 	function openMonthDetail(i: number) {
-		monthDetail = monthlyFleetData[i];
+		const md = monthlyFleetData[i];
+		if (md?.sehat && md?.warning && md?.critical) monthDetail = md;
 	}
 	function closeMonthDetail() {
 		monthDetail = null;
 	}
 
 	async function openMapFullscreen() {
+		if (fullMap) {
+			fullMap.remove();
+			fullMap = null;
+		}
 		mapFullscreen = true;
 		await tick();
 		fullMap = await createMap('mining-map-full', mapLocations as any, { zoom: 13, dark: theme.isDark });
@@ -198,7 +203,11 @@
 		}
 		isLoading = false;
 		await tick();
-		await Promise.all([buildChart(), buildMap()]);
+		try {
+			await Promise.all([buildChart(), buildMap()]);
+		} catch (e: any) {
+			error = error || e?.message || 'Gagal menampilkan grafik/peta.';
+		}
 	});
 
 	onDestroy(() => {
@@ -303,7 +312,7 @@
 					</div>
 					<div class="flex gap-2 items-center">
 						<span class="text-[10px] font-medium text-[color:var(--text-faint)] hidden sm:inline">💡 Klik titik untuk detail</span>
-						<button class="btn btn-ghost !py-2 text-sm">Tahun 2026</button>
+						<span class="badge bg-steel/10 border-[color:var(--border)] text-[color:var(--text-muted)] !py-2 text-sm">Tahun 2026</span>
 					</div>
 				</div>
 				<div class="flex-1 w-full h-80 relative mt-2 cursor-pointer">
@@ -453,8 +462,8 @@
 				<div class="flex items-center gap-3 flex-wrap">
 					<div class="hidden sm:flex gap-4 text-xs font-semibold">
 						<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-critical"></span> Critical</div>
-						<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-warning"></span> High</div>
-						<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-healthy"></span> Normal</div>
+						<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-warning"></span> Warning</div>
+						<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-healthy"></span> Sehat</div>
 					</div>
 					<button class="btn btn-ghost !py-2 text-sm" onclick={openMapFullscreen}>
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4" /></svg>

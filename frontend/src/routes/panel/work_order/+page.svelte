@@ -166,7 +166,7 @@
 		return fmtRupiah(n);
 	};
 	const fmtHours = (h: number) =>
-		h >= 24 ? `${Math.floor(h / 24)} hari ${Math.round(h % 24)} jam` : `${Math.round(h)} jam`;
+		!Number.isFinite(h) ? '-' : h >= 24 ? `${Math.floor(h / 24)} hari ${Math.round(h % 24)} jam` : `${Math.round(h)} jam`;
 	const fmtDate = (d: Date) =>
 		d.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 	const fmtDateLong = (d: Date | string) =>
@@ -194,7 +194,7 @@
 					{ label: 'Brake Twin', hours: twinObj.brake_twin_rul },
 					{ label: 'Bearing Twin', hours: twinObj.bearing_twin_rul },
 					{ label: 'Hydraulic Twin', hours: twinObj.hydraulic_twin_rul }
-				]
+				].filter((t) => Number.isFinite(t.hours))
 			: [];
 		return {
 			id: u.id,
@@ -231,18 +231,21 @@
 				.map((u: any, i: number) => buildItem(u, analyses[i]))
 				.sort((a: WoItem, b: WoItem) => a.rulHours - b.rulHours);
 			if (items.length) {
-				// Preserve the deep-linked (?asset=KODE) selection across refreshes,
-				// otherwise keep the current selection, else fall back to the most
-				// urgent unit.
-				const fromQuery = pageStore.url.searchParams.get('asset');
-				const match = fromQuery
-					? items.find((it) => it.code.toLowerCase() === fromQuery.toLowerCase())
-					: undefined;
-				if (!selectedCode || !items.find((it) => it.code === selectedCode)) {
-					selectedCode = (match || items[0]).code;
-				}
+				// Pertahankan pilihan saat ini bila unit-nya masih berisiko; jika
+				// tidak, jatuh ke unit paling mendesak. Deep-link ?asset= hanya
+				// dipakai saat pertama kali memuat agar tidak menimpa pilihan user
+				// pada refresh otomatis.
+				const keep = selectedCode ? items.find((it) => it.code === selectedCode) : undefined;
+				selectedCode = keep ? keep.code : items[0].code;
 			} else {
 				selectedCode = null;
+			}
+			// Selaraskan modal yang sedang terbuka dengan data terbaru (cegah
+			// angka RUL/countdown basi saat auto-refresh berjalan).
+			if (modalOpen && modalItem) {
+				const fresh = items.find((it) => it.code === modalItem!.code);
+				if (fresh) modalItem = fresh;
+				else closeModal();
 			}
 			error = '';
 			lastUpdate = new Date().toLocaleTimeString('id-ID');
@@ -630,7 +633,10 @@
 		refreshTimer = setInterval(() => {
 			if (autoRefresh) refreshAll();
 		}, 15000);
-		tickTimer = setInterval(() => (nowTick = Date.now()), 1000);
+		// Hitung mundur hanya perlu berjalan saat modal perbaikan terbuka.
+		tickTimer = setInterval(() => {
+			if (modalOpen) nowTick = Date.now();
+		}, 1000);
 	});
 
 	onDestroy(() => {
@@ -740,6 +746,10 @@
 							<tr
 								class="border-b border-[color:var(--border)] cursor-pointer hover:bg-[color:var(--surface-2)] transition-colors {selectedCode === it.code ? 'bg-[color:var(--surface-2)]' : ''}"
 								onclick={() => selectUnit(it.code)}
+								tabindex="0"
+								role="button"
+								aria-label={`Pilih unit ${it.code}`}
+								onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectUnit(it.code); } }}
 							>
 								<td class="py-2.5 pr-3 font-mono text-[11px]">{it.woId}</td>
 								<td class="py-2.5 pr-3 font-semibold">{it.code}<span class="block text-[10px] text-[color:var(--text-muted)] font-normal">{it.type}</span></td>
@@ -749,7 +759,7 @@
 								<td class="py-2.5 pr-3">{it.topComponent}</td>
 								<td class="py-2.5 pr-3 font-mono text-[11px]">{fmtDate(it.repairByDate)}</td>
 								<td class="py-2.5 pr-3 font-semibold text-amber">{fmtRupiahShort(it.estCost)}</td>
-								<td class="py-2.5 text-right"><button class="btn btn-ghost !py-1.5 !px-3 text-[11px] text-steel" onclick={(e) => { e.stopPropagation(); openModal(it); }}>Detail</button></td>
+								<td class="py-2.5 text-right"><button class="btn btn-ghost !py-1.5 !px-3 text-[11px] text-steel" onclick={(e) => { e.stopPropagation(); openModal(it); }}>Buat WO</button></td>
 							</tr>
 						{/each}
 						{#if !filteredItems.length}

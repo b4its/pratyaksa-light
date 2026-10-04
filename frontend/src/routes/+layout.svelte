@@ -8,6 +8,11 @@
 
 	let { children } = $props();
 
+	// Panel routes own their own transition (inside the panel layout) so the
+	// sidebar is NOT re-mounted/animated on every panel navigation. Other
+	// routes get the page transition here.
+	const isPanel = $derived(page.url.pathname.startsWith('/panel'));
+
 	onMount(() => {
 		theme.init();
 		auth.init();
@@ -21,8 +26,12 @@
 	<title>Pratyaksa</title>
 </svelte:head>
 
-{#key page.url.pathname}
-	<div in:fly={{ y: 14, duration: 320 }} out:fade={{ duration: 150 }}>
-		{@render children()}
-	</div>
-{/key}
+{#if isPanel}
+	{@render children()}
+{:else}
+	{#key page.url.pathname}
+		<div in:fly={{ y: 14, duration: 320 }} out:fade={{ duration: 150 }}>
+			{@render children()}
+		</div>
+	{/key}
+{/if}

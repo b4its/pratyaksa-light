@@ -30,6 +30,7 @@
 	let alertStatus = $state<{ ok: boolean; msg: string } | null>(null);
 	let alertTesting = $state(false);
 	let alertStatusTimer: ReturnType<typeof setTimeout> | null = null;
+	let alertInFlight = false;
 	const alertedAssets = new Set<string>();
 	const alertCooldown = new Map<string, number>();
 	const ALERT_STATUSES = ['CRITICAL', 'WARNING'];
@@ -54,11 +55,13 @@
 	const statusLabelColor = (s: string) =>
 		({ NORMAL: '#1FA971', WARNING: '#E0A106', CRITICAL: '#E0413E' })[s] || '#7A848E';
 	const fmtHours = (h: number) =>
-		h == null
+		!Number.isFinite(h)
 			? '-'
 			: h >= 24
 				? `${Math.floor(h / 24)} hari ${Math.round(h % 24)} jam`
 				: `${Math.round(h)} jam`;
+	// Angka HM (hour-meter) dengan pemisah ribuan; '-' bila data kosong.
+	const fmtHM = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v).toLocaleString('id-ID') : '-');
 
 	const operationalFields = [
 		{ k: 'road_grade_pct', l: 'Road Grade', u: '%' },
@@ -110,11 +113,13 @@
 	);
 
 	// --- fetch ---
+	let analysisReq = 0;
+
 	async function fetchOverview() {
 		try {
 			const res: any = await api.getAnalisaOverview();
 			overview = res.data;
-			if (!selectedUnitId && res.data.units?.length > 0) {
+			if (!selectedUnitId && res.data?.units?.length > 0) {
 				selectedUnitId = res.data.units[0].id;
 			}
 			error = '';
@@ -125,11 +130,17 @@
 
 	async function fetchAnalysis() {
 		if (!selectedUnitId) return;
+		const reqId = ++analysisReq;
+		const unitId = selectedUnitId;
 		try {
-			const res: any = await api.getUnitAnalysis(selectedUnitId);
+			const res: any = await api.getUnitAnalysis(unitId);
+			// Abaikan respons basi bila user sudah memilih unit lain.
+			if (reqId !== analysisReq || unitId !== selectedUnitId) return;
 			analysis = res.data;
 			lastUpdate = new Date().toLocaleTimeString('id-ID');
 		} catch (e: any) {
+			if (reqId !== analysisReq || unitId !== selectedUnitId) return;
+			analysis = null;
 			error = e?.message || 'Gagal memuat analitik unit.';
 		}
 	}
@@ -183,45 +194,53 @@
 	}
 
 	async function maybeSendAlert() {
-		const ov = overview;
-		if (!ov || !Array.isArray(ov.units)) return;
-		const atRisk = ov.units.filter((u: any) => ALERT_STATUSES.includes(u.status));
-		const atRiskCodes = new Set(atRisk.map((u: any) => u.code));
-		for (const code of [...alertedAssets]) {
-			if (!atRiskCodes.has(code)) {
-				alertedAssets.delete(code);
-				alertCooldown.delete(code);
+		// Cegah pengiriman ganda: alertTimer (5s) dan refreshAll (15s) bisa
+		// memanggil bersamaan sebelum alertedAssets sempat terisi.
+		if (alertInFlight) return;
+		alertInFlight = true;
+		try {
+			const ov = overview;
+			if (!ov || !Array.isArray(ov.units)) return;
+			const atRisk = ov.units.filter((u: any) => ALERT_STATUSES.includes(u.status));
+			const atRiskCodes = new Set(atRisk.map((u: any) => u.code));
+			for (const code of [...alertedAssets]) {
+				if (!atRiskCodes.has(code)) {
+					alertedAssets.delete(code);
+					alertCooldown.delete(code);
+				}
 			}
-		}
-		let sent = 0;
-		let failed = 0;
-		let lastDetail = '';
-		for (const u of atRisk) {
-			const asset = u.code;
-			if (alertedAssets.has(asset)) continue;
-			if (Date.now() < (alertCooldown.get(asset) || 0)) continue;
-			try {
-				const detail: any = await api.getUnitAnalysis(u.id);
-				const a = detail.data;
-				await api.sendAlert(buildAlertPayload(a, u.status));
-				alertedAssets.add(asset);
-				alertCooldown.delete(asset);
-				sent++;
-			} catch (e: any) {
-				alertCooldown.set(asset, Date.now() + 60000);
-				failed++;
-				lastDetail = e?.message || 'endpoint tak terjangkau';
+			let sent = 0;
+			let failed = 0;
+			let lastDetail = '';
+			for (const u of atRisk) {
+				const asset = u.code;
+				if (alertedAssets.has(asset)) continue;
+				if (Date.now() < (alertCooldown.get(asset) || 0)) continue;
+				try {
+					const detail: any = await api.getUnitAnalysis(u.id);
+					const a = detail.data;
+					await api.sendAlert(buildAlertPayload(a, u.status));
+					alertedAssets.add(asset);
+					alertCooldown.delete(asset);
+					sent++;
+				} catch (e: any) {
+					alertCooldown.set(asset, Date.now() + 60000);
+					failed++;
+					lastDetail = e?.message || 'endpoint tak terjangkau';
+				}
 			}
-		}
-		if (sent > 0 && failed === 0) {
-			showAlertStatus(true, `Alert terkirim untuk ${sent} unit berisiko (CRITICAL/WARNING).`);
-		} else if (sent > 0 && failed > 0) {
-			showAlertStatus(false, `${sent} alert terkirim, ${failed} gagal: ${lastDetail}`);
-		} else if (failed > 0) {
-			showAlertStatus(
-				false,
-				`Gagal kirim alert (${failed} unit): ${lastDetail} — cek koneksi ke endpoint Telegram.`
-			);
+			if (sent > 0 && failed === 0) {
+				showAlertStatus(true, `Alert terkirim untuk ${sent} unit berisiko (CRITICAL/WARNING).`);
+			} else if (sent > 0 && failed > 0) {
+				showAlertStatus(false, `${sent} alert terkirim, ${failed} gagal: ${lastDetail}`);
+			} else if (failed > 0) {
+				showAlertStatus(
+					false,
+					`Gagal kirim alert (${failed} unit): ${lastDetail} — cek koneksi ke endpoint Telegram.`
+				);
+			}
+		} finally {
+			alertInFlight = false;
 		}
 	}
 
@@ -857,9 +876,9 @@
 								<div class="cell !text-left"><p class="cell-label">Operator</p><p class="cell-val text-sm">{analysis.telemetry.operator_id}</p></div>
 								<div class="cell !text-left"><p class="cell-label">Payload</p><p class="cell-val text-sm">{analysis.telemetry.payload_tonnage} t</p></div>
 								<div class="cell !text-left"><p class="cell-label">Ambient Temp</p><p class="cell-val text-sm">{analysis.telemetry.ambient_temp_c}°C</p></div>
-								<div class="cell !text-left"><p class="cell-label">Hour Meter</p><p class="cell-val text-sm">{analysis.telemetry.hour_meter_actual.toLocaleString()} HM</p></div>
-								<div class="cell !text-left"><p class="cell-label">Design Life</p><p class="cell-val text-sm">{analysis.telemetry.design_life_hm.toLocaleString()} HM</p></div>
-								<div class="cell !text-left"><p class="cell-label">Component Age</p><p class="cell-val text-sm">{analysis.telemetry.component_age_hm.toLocaleString()} HM</p></div>
+								<div class="cell !text-left"><p class="cell-label">Hour Meter</p><p class="cell-val text-sm">{fmtHM(analysis.telemetry.hour_meter_actual)} HM</p></div>
+								<div class="cell !text-left"><p class="cell-label">Design Life</p><p class="cell-val text-sm">{fmtHM(analysis.telemetry.design_life_hm)} HM</p></div>
+								<div class="cell !text-left"><p class="cell-label">Component Age</p><p class="cell-val text-sm">{fmtHM(analysis.telemetry.component_age_hm)} HM</p></div>
 								<div class="cell !text-left"><p class="cell-label">Remanufactured</p><p class="cell-val text-sm">{analysis.telemetry.is_remanufactured ? 'YA' : 'TIDAK'}</p></div>
 								<div class="!text-left col-span-2 rounded-[10px] p-2.5 border {analysis.telemetry.fault_code_severity >= 3 ? 'cell-danger' : analysis.telemetry.fault_code_severity >= 2 ? 'cell-warn' : 'cell'}">
 									<p class="cell-label">Fault Code Severity (DTC)</p>

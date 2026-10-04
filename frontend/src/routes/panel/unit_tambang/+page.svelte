@@ -57,6 +57,16 @@
 	const levelFor = (s: string) =>
 		({ SEHAT: 'L', WARNING: 'H', CRITICAL: 'I', RUSAK: 'X' })[s] || 'L';
 
+	// Format savings ($) dengan aman (menghindari $-NaN bila data kosong).
+	function fmtSavings(v: unknown): string {
+		const n = Number(v ?? 0);
+		const safe = Number.isFinite(n) ? n : 0;
+		return `${safe >= 0 ? '+$' : '-$'}${Math.abs(safe).toLocaleString()}`;
+	}
+	function savingsTone(v: unknown): 'pos' | 'neg' {
+		return Number(v ?? 0) >= 0 ? 'pos' : 'neg';
+	}
+
 	async function fetchUnits() {
 		isLoading = true;
 		error = '';
@@ -231,8 +241,10 @@
 				health,
 				maintenance: formData.maintenance,
 				savings,
-				img_url: formData.img_url || undefined,
-				model3d_url: formData.model3d_url || undefined,
+				// Kirim string kosong (bukan undefined) agar field bisa DIKOSONGKAN
+				// pada mode edit; undefined akan diabaikan backend (nilai lama tetap).
+				img_url: (formData.img_url ?? '').trim(),
+				model3d_url: (formData.model3d_url ?? '').trim(),
 				lat,
 				lng
 			};
@@ -408,7 +420,7 @@
 								</div>
 							</td>
 							<td class="text-xs text-[color:var(--text-muted)]">{unit.maintenance}</td>
-							<td class="font-mono font-semibold text-sm {unit.savings >= 0 ? 'text-healthy' : 'text-critical'}">{unit.savings >= 0 ? '+$' : '-$'}{Math.abs(unit.savings).toLocaleString()}</td>
+							<td class="font-mono font-semibold text-sm {savingsTone(unit.savings) === 'pos' ? 'text-healthy' : 'text-critical'}">{fmtSavings(unit.savings)}</td>
 							<td>
 								<div class="flex gap-2 flex-wrap">
 									<button class="btn btn-ghost !px-3 !py-1.5 text-xs" onclick={() => openDetail(unit)}>Lihat</button>
@@ -510,7 +522,7 @@
 					<div class="panel-flat p-4 text-center"><p class="label">Jadwal MTC</p><p class="text-base font-semibold mt-1 leading-tight">{selectedUnit.maintenance}</p></div>
 					<div class="p-4 text-center rounded-[10px] bg-steel-gradient text-white border border-[color:var(--border)]">
 						<p class="text-[10px] font-semibold uppercase tracking-wider text-graphite-300 mb-1">Est. Saving</p>
-						<p class="text-xl font-mono font-bold {selectedUnit.savings >= 0 ? 'text-amber' : 'text-critical'}">{selectedUnit.savings >= 0 ? '+$' : '-$'}{Math.abs(selectedUnit.savings).toLocaleString()}</p>
+						<p class="text-xl font-mono font-bold {savingsTone(selectedUnit.savings) === 'pos' ? 'text-amber' : 'text-critical'}">{fmtSavings(selectedUnit.savings)}</p>
 					</div>
 				</div>
 			</div>
